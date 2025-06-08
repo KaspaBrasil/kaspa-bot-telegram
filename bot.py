@@ -289,39 +289,38 @@ async def hardwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
-🐦 **Contas do X (Twitter) Relacionadas à Kaspa:**
+🐦 *Contas do X \\(Twitter\\) Relacionadas à Kaspa:*
 
 👨‍💻 *Desenvolvedores:*
-• https://x.com/coderofstuff_
-• https://x.com/hashdag
-• https://x.com/michaelsuttonil
+• https://x\\.com/coderofstuff\\_
+• https://x\\.com/hashdag
+• https://x\\.com/michaelsuttonil
 
 🌎 *Estrangeiros:*
-• https://x.com/BankQuote_DAG
-• https://x.com/christi61026749
-• https://x.com/DailyKaspa
-• https://x.com/kasmediadotcom
-• https://x.com/KaspaHubOrg
-• https://x.com/Kaspa_BlockDAG
-• https://x.com/KaspaClass
-• https://x.com/Kaspa_Commons
-• https://x.com/KaspaCurrency
-• https://x.com/KaspaFacts
-• https://x.com/kaspalife
-• https://x.com/KaspaReport
-• https://x.com/KryptoLeidy
-• https://x.com/OrangutanElder
-• https://x.com/plzsats
-• https://x.com/skibumtrading
-• https://x.com/supertypo_kas
-• https://x.com/Themooseisloos5
+• https://x\\.com/BankQuote\\_DAG
+• https://x\\.com/christi61026749
+• https://x\\.com/DailyKaspa
+• https://x\\.com/kasmediadotcom
+• https://x\\.com/KaspaHubOrg
+• https://x\\.com/Kaspa\\_BlockDAG
+• https://x\\.com/KaspaClass
+• https://x\\.com/Kaspa\\_Commons
+• https://x\\.com/KaspaCurrency
+• https://x\\.com/KaspaFacts
+• https://x\\.com/kaspalife
+• https://x\\.com/KaspaReport
+• https://x\\.com/KryptoLeidy
+• https://x\\.com/OrangutanElder
+• https://x\\.com/plzsats
+• https://x\\.com/skibumtrading
+• https://x\\.com/supertypo\\_kas
+• https://x\\.com/Themooseisloos5
 
 🇧🇷 *Brasileiros:*
-• https://x.com/paulopowers
+• https://x\\.com/paulopowers
 """
     if update.effective_message:
-        await update.effective_message.reply_text(message, parse_mode="Markdown")
-
+        await update.effective_message.reply_text(message, parse_mode="MarkdownV2")
 
 async def error_handler(update, context):
     print(f"Erro: {context.error}")
