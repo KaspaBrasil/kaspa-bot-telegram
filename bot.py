@@ -28,22 +28,21 @@ Use /help para ver todos os comandos disponíveis.
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = (
         "📖 *Comandos disponíveis:*  \n\n"
-        "/analytics — Ferramentas de análise  \n"
-        "/regras — Regras do grupo  \n"
+        "/analises — Ferramentas de Análise  \n"
+        "/regras — Regras do Grupo  \n"
         "/info — Informações gerais sobre Kaspa  \n"
-        "/tools — Ferramentas e serviços técnicos  \n"
-        "/media — Comunidade e mídia  \n"
+        "/ferramentas — Ferramentas e Serviços Técnicos  \n"
+        "/media — Comunidade e Mídia  \n"
         "/shop — Mercado e comércio  \n"
-        "/projects — Projetos e recursos criativos  \n"
-        "/p2p_oficial_br — P2P oficial do grupo  \n"
-        "/exchanges_br — Corretoras principais  \n"
-        "/exchanges_small — Corretoras menores  \n"
-        "/swap_services — Serviços de swap  \n"
-        "/fiat_payments_on_off_ramp — Plataformas Fiat/Cripto  \n"
-        "/other_platforms — Outras plataformas  \n"
-        "/hotwallets_recommended — Hotwallets recomendadas  \n"
-        "/hotwallets_caution — Hotwallets (atenção)  \n"
-        "/hardware_wallets — Coldwallets e Hardwallets  "
+        "/projetos — Projetos e Recursos Criativos  \n"
+        "/p2p — P2P Oficial do Grupo  \n"
+        "/exchangesG — Corretoras Grandes  \n"
+        "/exchangesP — Corretoras Pequenas  \n"
+        "/swap — Serviços de Swap  \n"
+        "/fiat-cripto — Plataformas Fiat/Cripto  \n"
+        "/hotwallets — Hotwallets Recomendadas e Outras  \n"
+        "/hardwallets — Coldwallets e Hardwallets  \n"
+        "/contasX — Melhores Contas no X  "
     )
     if update.effective_message:
         await update.effective_message.reply_text(message)
@@ -369,20 +368,21 @@ def main():
     app.add_handler(CommandHandler("analytics", analytics))
     app.add_handler(CommandHandler("regras", regras))
     app.add_handler(CommandHandler("info", info))
-    app.add_handler(CommandHandler("tools", tools))
+    app.add_handler(CommandHandler("analises", analytics))
+    app.add_handler(CommandHandler("ferramentas", tools))
     app.add_handler(CommandHandler("media", media))
     app.add_handler(CommandHandler("shop", shop))
-    app.add_handler(CommandHandler("projects", projects))
-    app.add_handler(CommandHandler("p2p_oficial_br", p2p_oficial_br))
-    app.add_handler(CommandHandler("exchanges_br", exchanges_br))
-    app.add_handler(CommandHandler("exchanges_small", exchanges_small))
-    app.add_handler(CommandHandler("swap_services", swap_services))
-    app.add_handler(CommandHandler("fiat_payments_on_off_ramp", fiat_payments_on_off_ramp))
-    app.add_handler(CommandHandler("other_platforms", other_platforms))
-    app.add_handler(CommandHandler("hotwallets_recommended", hotwallets_recommended))
+    app.add_handler(CommandHandler("projetos", projects))
+    app.add_handler(CommandHandler("p2p", p2p_oficial_br))
+    app.add_handler(CommandHandler("exchangesG", exchanges_br))
+    app.add_handler(CommandHandler("exchangesP", exchanges_small))
+    app.add_handler(CommandHandler("swap", swap_services))
+    app.add_handler(CommandHandler("fiat-cripto", fiat_payments_on_off_ramp))
+    app.add_handler(CommandHandler("hotwallets", hotwallets_recommended))
+    app.add_handler(CommandHandler("hardwallets", hardware_wallets))
+    app.add_handler(CommandHandler("contasX", contas_x))
     app.add_handler(CommandHandler("hotwallets_caution", hotwallets_caution))
-    app.add_handler(CommandHandler("hardware_wallets", hardware_wallets))
-    app.add_handler(CommandHandler("contas_x", contas_x))
+    app.add_handler(CommandHandler("other_platforms", other_platforms))
     
     # Adicionando manipulador de erros
     app.add_error_handler(error_handler)
