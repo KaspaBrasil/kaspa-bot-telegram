@@ -22,24 +22,23 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 ## Comandos disponíveis
 
 ```
-/start                - Mensagem de boas-vindas
-/help                 - Lista todos os comandos
-/analytics            - Ferramentas de análise
-/regras               - Regras do grupo
-/info                 - Informações gerais sobre Kaspa
-/tools                - Ferramentas e serviços técnicos
-/media                - Comunidade e mídia
-/shop                 - Mercado e comércio
-/projects             - Projetos e recursos criativos
-/p2p_oficial_br       - P2P oficial do grupo
-/exchanges_br         - Corretoras principais
-/exchanges_small      - Corretoras menores
-/swap_services        - Serviços de swap
-/fiat_payments_on_off_ramp - Plataformas Fiat/Cripto
-/other_platforms      - Outras plataformas
-/hotwallets_recommended - Hotwallets recomendadas
-/hotwallets_caution   - Hotwallets (atenção)
-/hardware_wallets     - Coldwallets e Hardwallets
+/start         - Mensagem de boas-vindas
+/help          - Lista todos os comandos
+/analises      - Ferramentas de Análise
+/regras        - Regras do Grupo
+/info          - Informações gerais sobre Kaspa
+/ferramentas   - Ferramentas e Serviços Técnicos
+/media         - Comunidade e Mídia
+/shop          - Mercado e comércio
+/projetos      - Projetos e Recursos Criativos
+/p2p           - P2P Oficial do Grupo
+/exchangesG    - Corretoras Grandes
+/exchangesP    - Corretoras Pequenas
+/swap          - Serviços de Swap
+/fiat_cripto   - Plataformas Fiat/Cripto
+/hotwallets    - Hotwallets Recomendadas e Outras
+/hardwallets   - Coldwallets e Hardwallets
+/contasX       - Melhores Contas no X
 ```
 
 ## Como rodar localmente
