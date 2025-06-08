@@ -1,7 +1,9 @@
 import os
+import asyncio
+
 from dotenv import load_dotenv
 from pathlib import Path
-
+from telegram import BotCommand
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -353,13 +355,36 @@ def main():
     app.add_handler(CommandHandler("contasX", contasX))
     app.add_handler(CommandHandler("hotwallets_caution", hotwallets))
     
-    # Adicionando manipulador de erros
     app.add_error_handler(error_handler)
+    
+    # ✅ Atualizar comandos disponíveis no menu do Telegram
+    async def set_commands():
+        comandos = [
+            BotCommand("start", "Iniciar o bot"),
+            BotCommand("help", "Ver ajuda"),
+            BotCommand("analises", "Ferramentas de Análise"),
+            BotCommand("regras", "Regras do Grupo"),
+            BotCommand("info", "Informações sobre Kaspa"),
+            BotCommand("ferramentas", "Ferramentas Técnicas"),
+            BotCommand("media", "Comunidade e Mídia"),
+            BotCommand("shop", "Mercado e Comércio"),
+            BotCommand("projetos", "Projetos Criativos"),
+            BotCommand("p2p", "P2P do Grupo"),
+            BotCommand("exchangesG", "Corretoras Grandes"),
+            BotCommand("exchangesP", "Corretoras Pequenas"),
+            BotCommand("swap", "Serviços de Swap"),
+            BotCommand("fiat_cripto", "Fiat/Crypto On-Ramp"),
+            BotCommand("hotwallets", "Hotwallets Recomendadas"),
+            BotCommand("hardwallets", "Hardwallets"),
+            BotCommand("contasX", "Contas do X sobre Kaspa")
+        ]
+        await app.bot.set_my_commands(comandos)
+
+    asyncio.run(set_commands()) 
 
     print("Bot Kaspa Brasil rodando...")
 
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
