@@ -80,7 +80,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def analytics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def analises(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 📊 **Ferramentas de Análise:**
 
@@ -98,7 +98,7 @@ async def analytics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def ferramentas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🛠️ **Ferramentas e Serviços Técnicos:**
 
@@ -137,7 +137,7 @@ async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🎨 **Outros Recursos e Projetos Criativos:**
 
@@ -153,7 +153,7 @@ async def projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def p2p_oficial_br(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def p2p(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🤝 *P2P Oficial do Grupo:*  
 @el\\_locco\\_p2p
@@ -162,7 +162,7 @@ async def p2p_oficial_br(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.effective_message.reply_text(message, parse_mode="MarkdownV2")
 
 
-async def exchanges_br(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def exchangesG(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🏛️ **Corretoras Centralizadas Grandes:**
 
@@ -188,7 +188,7 @@ async def exchanges_br(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def exchanges_small(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def exchangesP(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🏦 **Corretoras Centralizadas Pequenas:**
 
@@ -216,7 +216,7 @@ async def exchanges_small(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def swap_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def swap(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🔄 **Serviços de Swap e Troca Instantânea:**
 
@@ -237,7 +237,7 @@ async def swap_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def fiat_payments_on_off_ramp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def fiat_cripto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 💳 **Plataformas de Pagamento e Fiat On/Off-Ramp:**
 
@@ -251,30 +251,7 @@ async def fiat_payments_on_off_ramp(update: Update, context: ContextTypes.DEFAUL
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def other_platforms(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    message = """
-🧠 **Outras Plataformas:**
-
-• Baltex - https://baltex.io
-• Coinoswap - https://www.coinoswap.com/
-• CoinStash - https://www.coinstash.com.au
-• CoinStore - https://www.coinstore.com
-• Dex-Trade - https://dex-trade.com
-• GroveX - https://www.grovex.io
-• Hibit - https://hibit.app
-• Jucoin - https://jucoin.com
-• LCX Exchange - https://exchange.lcx.com
-• Neverless - https://neverless.com
-• OrangeX - https://www.orangex.com
-• Pionex - https://www.pionex.us
-• Swyftx - App na Playstore
-• Zodia - http://zodia-custody.com/
-"""
-    if update.effective_message:
-        await update.effective_message.reply_text(message, parse_mode="Markdown")
-
-
-async def hotwallets_recommended(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def hotwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🔥 **Hotwallets (Recomendadas):**
 
@@ -282,13 +259,7 @@ async def hotwallets_recommended(update: Update, context: ContextTypes.DEFAULT_T
 - OKX Web3: https://www.okx.com/web3/
 - Paper Wallet: https://github.com/svarogg/kaspaper/releases/tag/v0.0.3
 - Zelcore: https://zelcore.io/
-"""
-    if update.effective_message:
-        await update.effective_message.reply_text(message, parse_mode="Markdown")
 
-
-async def hotwallets_caution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    message = """
 ⚠️ **Hotwallets (Não testadas - USE POR SUA CONTA E RISCO):**
 
 • Cool Wallet - App Store / Play Store
@@ -303,7 +274,7 @@ async def hotwallets_caution(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def hardware_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def hardwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🧊 **Hardwallets e Coldwallets (Recomendadas):**
 
@@ -316,7 +287,7 @@ async def hardware_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def contas_x(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🐦 **Contas do X (Twitter) Relacionadas à Kaspa:**
 
@@ -365,24 +336,22 @@ def main():
     # 🔗 Adicionando comandos
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("analytics", analytics))
+    app.add_handler(CommandHandler("analises", analises))
     app.add_handler(CommandHandler("regras", regras))
     app.add_handler(CommandHandler("info", info))
-    app.add_handler(CommandHandler("analises", analytics))
-    app.add_handler(CommandHandler("ferramentas", tools))
+    app.add_handler(CommandHandler("ferramentas", ferramentas))
     app.add_handler(CommandHandler("media", media))
     app.add_handler(CommandHandler("shop", shop))
-    app.add_handler(CommandHandler("projetos", projects))
-    app.add_handler(CommandHandler("p2p", p2p_oficial_br))
-    app.add_handler(CommandHandler("exchangesG", exchanges_br))
-    app.add_handler(CommandHandler("exchangesP", exchanges_small))
-    app.add_handler(CommandHandler("swap", swap_services))
-    app.add_handler(CommandHandler("fiatcripto", fiat_payments_on_off_ramp))
-    app.add_handler(CommandHandler("hotwallets", hotwallets_recommended))
-    app.add_handler(CommandHandler("hardwallets", hardware_wallets))
-    app.add_handler(CommandHandler("contasX", contas_x))
-    app.add_handler(CommandHandler("hotwallets_caution", hotwallets_caution))
-    app.add_handler(CommandHandler("other_platforms", other_platforms))
+    app.add_handler(CommandHandler("projetos", projetos))
+    app.add_handler(CommandHandler("p2p", p2p))
+    app.add_handler(CommandHandler("exchangesG", exchangesG))
+    app.add_handler(CommandHandler("exchangesP", exchangesP))
+    app.add_handler(CommandHandler("swap", swap))
+    app.add_handler(CommandHandler("fiat_cripto", fiat_cripto))
+    app.add_handler(CommandHandler("hotwallets", hotwallets))
+    app.add_handler(CommandHandler("hardwallets", hardwallets))
+    app.add_handler(CommandHandler("contasX", contasX))
+    app.add_handler(CommandHandler("hotwallets_caution", hotwallets))
     
     # Adicionando manipulador de erros
     app.add_error_handler(error_handler)
