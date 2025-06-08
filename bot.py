@@ -39,7 +39,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/exchangesG — Corretoras Grandes  \n"
         "/exchangesP — Corretoras Pequenas  \n"
         "/swap — Serviços de Swap  \n"
-        "/fiat-cripto — Plataformas Fiat/Cripto  \n"
+        "/fiat_cripto — Plataformas Fiat/Cripto  \n"
         "/hotwallets — Hotwallets Recomendadas e Outras  \n"
         "/hardwallets — Coldwallets e Hardwallets  \n"
         "/contasX — Melhores Contas no X  "
@@ -377,7 +377,7 @@ def main():
     app.add_handler(CommandHandler("exchangesG", exchanges_br))
     app.add_handler(CommandHandler("exchangesP", exchanges_small))
     app.add_handler(CommandHandler("swap", swap_services))
-    app.add_handler(CommandHandler("fiat-cripto", fiat_payments_on_off_ramp))
+    app.add_handler(CommandHandler("fiatcripto", fiat_payments_on_off_ramp))
     app.add_handler(CommandHandler("hotwallets", hotwallets_recommended))
     app.add_handler(CommandHandler("hardwallets", hardware_wallets))
     app.add_handler(CommandHandler("contasX", contas_x))
