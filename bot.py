@@ -75,6 +75,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 • https://wiki.kaspa.org/en/home
 • https://api.kaspa.org/docs
 • https://kaspafunding.com/
+• http://kaspadao.org/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -108,6 +109,10 @@ async def ferramentas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 • https://nodes.kaspa.ws/
 • https://deepwiki.com/kaspanet/rusty-kaspa
 • https://research.kas.pa
+• https://app.knsdomains.org/
+• https://kasmixer.com/
+• https://kasia.fyi/
+• https://github.com/kas-builder/KasPush
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -132,6 +137,7 @@ async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 • https://kasbay.org/
 • https://kasway.xyz
+• https://bucks.fyi/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -148,6 +154,8 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 • https://kas-music.web.app/
 • https://kasunder.com/overview
 • https://kaspajobs.com
+• https://moonbound.gg/
+• https://www.proofofworks.com/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -155,8 +163,9 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def p2p(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
-🤝 *P2P Oficial do Grupo:*  
-@el\\_locco\\_p2p
+🤝 *P2Ps Oficiais do Grupo:*  
+@el\\_locco\\_p2p  
+@GONZALEZP2P
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="MarkdownV2")
@@ -210,7 +219,6 @@ async def exchangesP(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 • Ourbit - https://www.ourbit.com
 • Tapbit - https://www.tapbit.com
 • Wazirx - https://wazirx.com
-• Xeggex - https://xegeex.com
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -257,7 +265,6 @@ async def hotwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 - Kaspium: https://kaspium.io/
 - OKX Web3: https://www.okx.com/web3/
-- Paper Wallet: https://github.com/svarogg/kaspaper/releases/tag/v0.0.3
 - Zelcore: https://zelcore.io/
 
 ⚠️ **Hotwallets (Não testadas - USE POR SUA CONTA E RISCO):**
@@ -282,6 +289,7 @@ async def hardwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 • OneKey: https://onekey.so/
 • Tangem: https://tangem.com/
 • Safepal: https://www.safepal.com/pt/download
+• Paper Wallet: https://github.com/svarogg/kaspaper/releases/tag/v0.0.3
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
