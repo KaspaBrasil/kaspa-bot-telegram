@@ -345,7 +345,7 @@ async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 🇧🇷 *Brasileiros:*
 • https://x\\.com/aloneinheaven\\_
 • https://x\\.com/KaspaBrasil
-• https://x\\.com/kingdompepper01
+• https://x\\.com/AkaliOnKAS
 • https://x\\.com/NetoFerrei86955
 • https://x\\.com/paulopowers
 • https://x\\.com/rub1936104
