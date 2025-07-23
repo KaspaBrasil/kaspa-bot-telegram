@@ -359,7 +359,7 @@ async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def doacoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
-💰 **Doações para o Projeto Kaspa:**
+💰 **Doações para nossos projetos:**
 
 🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
 `kaspa:qq0m5ajsm0km00u4ue2ncus6hpjhreccpureqale53n5h3pksgsgjd4r6vjys`
