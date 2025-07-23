@@ -42,7 +42,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/fiat_cripto — Plataformas Fiat/Cripto  \n"
         "/hotwallets — Hotwallets Recomendadas e Outras  \n"
         "/hardwallets — Coldwallets e Hardwallets  \n"
-        "/contasX — Melhores Contas no X  "
+        "/contasX — Melhores Contas no X  \n"
+        "/doacoes — Doações para o Projeto  "
     )
     if update.effective_message:
         await update.effective_message.reply_text(message)
@@ -74,8 +75,8 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 • https://kaspa.org/
 • https://wiki.kaspa.org/en/home
 • https://api.kaspa.org/docs
-• https://kaspafunding.com/
-• http://kaspadao.org/
+• https://kaspafaq.com/
+• https://research.kas.pa
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -94,6 +95,8 @@ async def analises(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 • https://kasview.netlify.app/
 • https://kasparchive.com/
 • https://www.kasparainbowchart.com/
+• https://kaspa-gdpv.net/
+• https://kaspaglo.be/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -108,11 +111,13 @@ async def ferramentas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 • https://kgi.kaspad.net/
 • https://nodes.kaspa.ws/
 • https://deepwiki.com/kaspanet/rusty-kaspa
-• https://research.kas.pa
 • https://app.knsdomains.org/
 • https://kasmixer.com/
 • https://kasia.fyi/
 • https://github.com/kas-builder/KasPush
+• http://kaspadao.org/
+• https://kaspanodes.com/
+• https://mineable.money/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -124,8 +129,9 @@ async def media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 • https://kasmedia.com/
 • https://kaspaweekly.com/
-• https://kaspahub.org
-• https://kaspalife.org
+• https://kaspahub.org/
+• https://kaspalife.org/
+• https://kabun.vercel.app/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -136,8 +142,11 @@ async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 🛍️ **Mercado e Comércio:**
 
 • https://kasbay.org/
-• https://kasway.xyz
+• https://kasway.xyz/
 • https://bucks.fyi/
+• https://kaspafinance.io/
+• https://schlangenreich.com/
+• https://thecriptosky.com/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -147,15 +156,15 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🎨 **Outros Recursos e Projetos Criativos:**
 
-• https://kas.energy
+• https://kas.energy/
 • https://whenkas.github.io/
-• https://kas.live
-• https://kaspanodes.com
+• https://kas.live/
 • https://kas-music.web.app/
-• https://kasunder.com/overview
-• https://kaspajobs.com
+• https://kasunder.com/overview/
+• https://kaspajobs.com/
 • https://moonbound.gg/
 • https://www.proofofworks.com/
+• https://kasiabook.com/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -164,7 +173,8 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def p2p(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🤝 *P2Ps Oficiais do Grupo:*  
-@el\\_locco\\_p2p  
+@Costrique  
+@Cypherdin  
 @GONZALEZP2P
 """
     if update.effective_message:
@@ -201,24 +211,25 @@ async def exchangesP(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     message = """
 🏦 **Corretoras Centralizadas Pequenas:**
 
-• AltcoinT - https://www.altcointrader.co.za
-• Ascendex - https://ascendex.com
-• Biconomy - https://www.biconomy.com
-• BigOne - https://big.one/trade
-• Bitcointry - https://bitcointry.com
-• Bitpanda - https://www.bitpanda.com
-• Bitvavo - https://www.bitvavo.com
+• AltcoinT - https://www.altcointrader.co.za/
+• Ascendex - https://ascendex.com/
+• Biconomy - https://www.biconomy.com/
+• BigOne - https://big.one/trade/
+• Bitcointry - https://bitcointry.com/
+• Bitpanda - https://www.bitpanda.com/
+• Bitvavo - https://www.bitvavo.com/
 • BTCC - https://www.btcc.com/
-• Btse - https://www.btse.com
-• CoinOne - https://coinone.co.kr
-• Coinspot - https://www.coinspot.com.au
-• Exmo - https://www.exmo.me
-• Hotcoin - https://www.hotcoin.com
-• Kcex - https://www.kcex.com
+• Btse - https://www.btse.com/
+• CoinOne - https://coinone.co.kr/
+• Coinspot - https://www.coinspot.com.au/
+• DigitalSurge - https://digitalsurge.com.au/
+• Exmo - https://www.exmo.me/
+• Hotcoin - https://www.hotcoin.com/
+• Kcex - https://www.kcex.com/
 • Novadax - https://www.novadax.com.br/
-• Ourbit - https://www.ourbit.com
-• Tapbit - https://www.tapbit.com
-• Wazirx - https://wazirx.com
+• Ourbit - https://www.ourbit.com/
+• Tapbit - https://www.tapbit.com/
+• Wazirx - https://wazirx.com/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -228,18 +239,19 @@ async def swap(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🔄 **Serviços de Swap e Troca Instantânea:**
 
-• ChangeHero - https://changehero.io
-• ChangeNow - https://www.changenow.io
-• Chaingelly - https://changelly.com
-• Exolim - https://exolix.com
-• Godex - https://godex.io
-• HoudiniSwap - https://houdiniswap.com
-• LetsExchange - https://letsexchange.io
-• Nonkyc - https://nonkyc.io
-• Quickex - https://quickex.io
-• RocketX - https://app.rocketx.exchange
-• SimpleSwap - https://simpleswap.io
-• Stealthex - https://stealthex.io
+• ChangeHero - https://changehero.io/
+• ChangeNow - https://www.changenow.io/
+• Chaingelly - https://changelly.com/
+• Exolim - https://exolix.com/
+• Godex - https://godex.io/
+• HoudiniSwap - https://houdiniswap.com/
+• LetsExchange - https://letsexchange.io/
+• Nonkyc - https://nonkyc.io/
+• Quickex - https://quickex.io/
+• RocketX - https://app.rocketx.exchange/
+• SimpleSwap - https://simpleswap.io/
+• Stealthex - https://stealthex.io/
+• CoinRabbit - https://coinrabbit.io/pt/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -288,8 +300,9 @@ async def hardwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 • Ledger App (via Kasvault): https://kasvault.io/
 • OneKey: https://onekey.so/
 • Tangem: https://tangem.com/
-• Safepal: https://www.safepal.com/pt/download
-• Paper Wallet: https://github.com/svarogg/kaspaper/releases/tag/v0.0.3
+• Safepal: https://www.safepal.com/pt/download/
+• Paper Wallet: https://github.com/svarogg/kaspaper/releases/tag/v0.0.3/
+• Goldshell Wallet: https://www.goldshell.com/product/goldshell-wallet/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -306,6 +319,7 @@ async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 🌎 *Estrangeiros:*
 • https://x\\.com/BankQuote\\_DAG
+• https://x\\.com/brt2412
 • https://x\\.com/christi61026749
 • https://x\\.com/DailyKaspa
 • https://x\\.com/kasmediadotcom
@@ -317,18 +331,44 @@ async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 • https://x\\.com/KaspaFacts
 • https://x\\.com/kaspalife
 • https://x\\.com/KaspaReport
+• https://x\\.com/kratk46609
 • https://x\\.com/KryptoLeidy
 • https://x\\.com/OrangutanElder
 • https://x\\.com/plzsats
+• https://x\\.com/pumpolinsky
+• https://x\\.com/kaspa30
+• https://x\\.com/Kaspa\\_HypeMan
 • https://x\\.com/skibumtrading
 • https://x\\.com/supertypo\\_kas
 • https://x\\.com/Themooseisloos5
 
 🇧🇷 *Brasileiros:*
+• https://x\\.com/aloneinheaven\\_
+• https://x\\.com/KaspaBrasil
+• https://x\\.com/kingdompepper01
+• https://x\\.com/NetoFerrei86955
 • https://x\\.com/paulopowers
+• https://x\\.com/rub1936104
+
+🇵🇹 *Portugueses:*
+• https://x\\.com/ExTriage
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="MarkdownV2")
+
+
+async def doacoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = """
+💰 **Doações para o Projeto Kaspa:**
+
+🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
+`kaspa:qq0m5ajsm0km00u4ue2ncus6hpjhreccpureqale53n5h3pksgsgjd4r6vjys`
+
+🌐 **Kaspahub:**
+`kaspa:qqejxej2q6eprdh0syyz4kuwf8064m5e0z446wlc57uuzxneq3n2yma57nyxm`
+"""
+    if update.effective_message:
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 async def error_handler(update, context):
     print(f"Erro: {context.error}")
@@ -358,6 +398,7 @@ def main():
     app.add_handler(CommandHandler("hotwallets", hotwallets))
     app.add_handler(CommandHandler("hardwallets", hardwallets))
     app.add_handler(CommandHandler("contasX", contasX))
+    app.add_handler(CommandHandler("doacoes", doacoes))
     app.add_handler(CommandHandler("hotwallets_caution", hotwallets))
     
     app.add_error_handler(error_handler)
