@@ -1,9 +1,16 @@
+import asyncio
 import os
+from datetime import datetime, timedelta, timezone
 
+import httpx
 from dotenv import load_dotenv
 from pathlib import Path
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
+from telegram.error import BadRequest
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, ContextTypes
+
+import charts
+from charts import BRASILIA, br, formatar_hashrate
 
 # 🔑 Carregar as variáveis do .env
 print(f"[DEBUG] Procurando .env em: {Path.cwd()}")
@@ -28,21 +35,29 @@ Use /help para ver todos os comandos disponíveis.
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = (
         "📖 *Comandos disponíveis:*  \n\n"
-        "/analises — Ferramentas de Análise  \n"
+        "/preco — Preço atual do KAS  \n"
+        "/kasbtc — Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)  \n"
+        "/hashrate — Hashrate da rede  \n"
+        "/halving — Próxima redução da recompensa  \n\n"
         "/regras — Regras do Grupo  \n"
         "/info — Informações gerais sobre Kaspa  \n"
+        "/analises — Ferramentas de Análise  \n"
         "/ferramentas — Ferramentas e Serviços Técnicos  \n"
         "/media — Comunidade e Mídia  \n"
         "/shop — Mercado e comércio  \n"
         "/projetos — Projetos e Recursos Criativos  \n"
-        "/p2p — P2P Oficial do Grupo  \n"
-        "/exchangesG — Corretoras Grandes  \n"
-        "/exchangesP — Corretoras Pequenas  \n"
+        "/jogos — Jogos  \n"
+        "/educacao — Educacional  \n"
+        "/defi — DeFi, Tokens e Layer 2  \n"
+        "/mineracao — Mineração  \n"
+        "/p2p — P2P Oficiais do Grupo  \n"
+        "/exchangesg — Corretoras Grandes  \n"
+        "/exchangesp — Corretoras Pequenas  \n"
         "/swap — Serviços de Swap  \n"
         "/fiat_cripto — Plataformas Fiat/Cripto  \n"
         "/hotwallets — Hotwallets Recomendadas e Outras  \n"
         "/hardwallets — Coldwallets e Hardwallets  \n"
-        "/contasX — Melhores Contas no X  \n"
+        "/twitter — Melhores Contas no X (Twitter)  \n"
         "/doacoes — Doações para o Projeto  "
     )
     if update.effective_message:
@@ -74,9 +89,13 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 • https://kaspa.org/
 • https://wiki.kaspa.org/en/home
-• https://api.kaspa.org/docs
+• https://www.kaspabr.com.br/
 • https://kaspafaq.com/
-• https://research.kas.pa
+• https://research.kas.pa/
+• https://hashtag.medium.com/
+• https://medium.com/@coderofstuff
+• https://github.com/kaspanet/rusty-kaspa
+• https://api.kaspa.org/docs
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -86,16 +105,32 @@ async def analises(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 📊 **Ferramentas de Análise:**
 
+🔎 **Exploradores:**
 • https://explorer.kaspa.org/
-• https://www.kaspalytics.com/
 • https://kas.fyi/
-• https://www.kaspainsights.com/
+• https://kaspaexplorer.com/
+• https://kascan.io/
+• https://www.dagscan.xyz/
+• https://kascov-explorer.web.app/
+• https://explorer.kasplex.org/
+
+📈 **Estatísticas e Gráficos:**
+• https://www.kaspalytics.com/
+• https://analytics.kasmedia.com/
+• https://kaspa-lens.com/
+• https://kaspatoken.kaslab.space/
+• https://www.kasparainbowchart.com/
+• https://kaspa-gdpv.net/
+• https://kasparchive.com/
+• https://www.coingecko.com/en/coins/kaspa
+• https://coinmarketcap.com/currencies/kaspa/
+
+🌐 **Visualizadores da Rede:**
+• https://kaspa.stream/
+• https://kaspadrome.xyz/
 • https://macmachi.github.io/kaspa-network-visualizer/
 • https://kaspaspeed.com/
 • https://kasview.netlify.app/
-• https://kasparchive.com/
-• https://www.kasparainbowchart.com/
-• https://kaspa-gdpv.net/
 • https://kaspaglo.be/
 """
     if update.effective_message:
@@ -107,17 +142,12 @@ async def ferramentas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 🛠️ **Ferramentas e Serviços Técnicos:**
 
 • https://www.kasplex.org/home
-• https://kastools.com/
 • https://kgi.kaspad.net/
 • https://nodes.kaspa.ws/
 • https://deepwiki.com/kaspanet/rusty-kaspa
 • https://app.knsdomains.org/
-• https://kasmixer.com/
 • https://kasia.fyi/
-• https://github.com/kas-builder/KasPush
-• http://kaspadao.org/
-• https://kaspanodes.com/
-• https://mineable.money/
+• https://devtools.kaslab.space/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -128,10 +158,12 @@ async def media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 📰 **Comunidade e Mídia:**
 
 • https://kasmedia.com/
-• https://kaspaweekly.com/
-• https://kaspahub.org/
-• https://kaspalife.org/
-• https://kabun.vercel.app/
+• https://kaspa.news/
+• https://kas.coffee/
+• https://kaspa.social/
+• https://kaspaflow.com/
+• https://kasshi.io/pt/video
+• https://vivoor.xyz/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -143,10 +175,14 @@ async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 • https://kasbay.org/
 • https://kasway.xyz/
-• https://bucks.fyi/
 • https://kaspafinance.io/
-• https://schlangenreich.com/
-• https://thecriptosky.com/
+• https://kasmart.org/marketplace
+• https://kaspabuy.shop/
+• https://www.kasbillboard.com/
+
+🗺️ **Mapas de Comércios que Aceitam KAS:**
+• https://www.kasmap.org/en
+• https://kaspamap.com/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -156,15 +192,57 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🎨 **Outros Recursos e Projetos Criativos:**
 
+• https://k-social.network/
+• https://kasia.fyi/
+• https://kas.live/
 • https://kas.energy/
 • https://whenkas.github.io/
-• https://kas.live/
-• https://kas-music.web.app/
-• https://kasunder.com/overview/
 • https://kaspajobs.com/
-• https://moonbound.gg/
 • https://www.proofofworks.com/
-• https://kasiabook.com/
+"""
+    if update.effective_message:
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def jogos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = """
+🎮 **Jogos:**
+
+• https://kasplay.fun/
+• https://tx-missile-command.com/
+"""
+    if update.effective_message:
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def educacao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = """
+🎓 **Educacional:**
+
+• Kaspa Space - https://matheus-7.gitbook.io/kaspa-space
+• Kaspa University - https://kaspa.university/
+• KasStacker - https://kasstacker.org/
+
+📚 **Livros:**
+• The Book of Kaspa: Realizing the Nakamoto Dream - https://www.amazon.com/dp/B0CCVTFM2N
+• Kaspa: From Ghost to Knight - https://www.amazon.com/dp/B0D2VK4PVR
+• Kaspa: The New Standard in Cryptocurrency (JP) - https://www.amazon.com/dp/B0F5LNM6BJ
+• Money - The Big Picture - https://www.amazon.com/dp/B0G1HQ5QZZ
+• https://www.amazon.com/dp/B0FT1V2NL4
+"""
+    if update.effective_message:
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def defi(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = """
+🧩 **DeFi, Tokens e Layer 2:**
+
+• Kasplex (KRC-20) - https://www.kasplex.org/home
+• Kaspa.com (marketplace KRC-20) - https://www.kaspa.com/
+• Zealous Swap (DEX) - https://zealousswap.com/
+• Igra Labs (Layer 2) - https://igralabs.com/
+• Kaspa Token Hub - https://kaspatoken.kaslab.space/
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -172,10 +250,10 @@ async def projetos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def p2p(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
-🤝 *P2Ps Oficiais do Grupo:*  
-@Costrique  
-@Cypherdin  
+🤝 *P2P Oficiais do Grupo:*
+@Cypherdin
 @GONZALEZP2P
+@Magia\\_Goetia
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="MarkdownV2")
@@ -223,12 +301,10 @@ async def exchangesP(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 • CoinOne - https://coinone.co.kr/
 • Coinspot - https://www.coinspot.com.au/
 • DigitalSurge - https://digitalsurge.com.au/
-• Exmo - https://www.exmo.me/
 • Hotcoin - https://www.hotcoin.com/
 • Kcex - https://www.kcex.com/
 • Novadax - https://www.novadax.com.br/
 • Ourbit - https://www.ourbit.com/
-• Tapbit - https://www.tapbit.com/
 • Wazirx - https://wazirx.com/
 """
     if update.effective_message:
@@ -263,7 +339,6 @@ async def fiat_cripto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 • Caled - https://calebandbrown.com/
 • Onramp - https://onramp.money
-• Paxful - https://www.paxful.com
 • Topperpay - https://www.topperpay.com
 • Uphold - https://uphold.com
 """
@@ -286,6 +361,7 @@ async def hotwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 • Kaspiano: https://github.com/KASPIANO/kaspacom-web-wallet
 • Mathwallet: http://mathdapp.store/?blockchain=kaspa
 • Kastle: https://github.com/forbole/kastle/releases/tag/v2.19.0
+• KasWare (extensão de navegador): https://kasware.xyz/
 • Kurncy Wallet - App Store / Play Store
 • PlusWallet: https://pluswallet.app
 """
@@ -308,7 +384,7 @@ async def hardwallets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
-async def contasX(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def twitter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = """
 🐦 *Contas do X \\(Twitter\\) Relacionadas à Kaspa:*
 
@@ -363,12 +439,278 @@ async def doacoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
 `kaspa:qq0m5ajsm0km00u4ue2ncus6hpjhreccpureqale53n5h3pksgsgjd4r6vjys`
-
-🌐 **Kaspahub:**
-`kaspa:qqejxej2q6eprdh0syyz4kuwf8064m5e0z446wlc57uuzxneq3n2yma57nyxm`
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+# 📡 Dados ao vivo (https://api.kaspa.org/docs) + gráficos
+
+KASPA_API = "https://api.kaspa.org"
+COINGECKO_API = "https://api.coingecko.com/api/v3"
+ERRO_API = "⚠️ Não foi possível obter os dados agora. Tente novamente em instantes."
+CACHE_HISTORICO = timedelta(minutes=30)
+_historico_hashrate = {"dados": None, "quando": None}
+
+
+async def get_json(client: httpx.AsyncClient, url: str, **params):
+    response = await client.get(url, params=params, timeout=20)
+    response.raise_for_status()
+    return response.json()
+
+
+async def historico_hashrate(client: httpx.AsyncClient) -> list:
+    # Histórico diário (~300 KB): guardado em cache para não baixar a cada comando
+    agora = datetime.now(tz=timezone.utc)
+    if not _historico_hashrate["dados"] or agora - _historico_hashrate["quando"] > CACHE_HISTORICO:
+        _historico_hashrate["dados"] = await get_json(
+            client, f"{KASPA_API}/info/hashrate/history", resolution="1d"
+        )
+        _historico_hashrate["quando"] = agora
+    return _historico_hashrate["dados"]
+
+
+async def enviar_grafico(update: Update, gerar, *args, legenda: str) -> None:
+    # O matplotlib bloqueia, então o gráfico é gerado em outra thread
+    imagem = await asyncio.to_thread(gerar, *args)
+    await update.effective_message.reply_photo(imagem, caption=legenda, parse_mode="Markdown")
+
+
+async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message:
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            price_usd = (await get_json(client, f"{KASPA_API}/info/price"))["price"]
+            marketcap = (await get_json(client, f"{KASPA_API}/info/marketcap"))["marketcap"]
+        except Exception as e:
+            print(f"Erro /preco: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+
+        # Cotação em BRL, variação 24h e histórico de 30 dias (opcional: se falhar, mostra só USD)
+        try:
+            cg = (await get_json(
+                client, f"{COINGECKO_API}/simple/price",
+                ids="kaspa", vs_currencies="brl,btc", include_24hr_change="true",
+            ))["kaspa"]
+            historico = (await get_json(
+                client, f"{COINGECKO_API}/coins/kaspa/market_chart", vs_currency="brl", days=30,
+            ))["prices"]
+        except Exception as e:
+            print(f"Erro CoinGecko: {e}")
+            cg = historico = None
+
+    message = (
+        "💲 *Preço do KAS*\n\n"
+        f"🇺🇸 US$ {br(price_usd, 5)}\n"
+        + (f"🇧🇷 R$ {br(cg['brl'], 4)}\n₿ {br(cg['btc'] * 1e8)} sats\n" if cg else "")
+        + f"🏦 Market cap: US$ {br(marketcap, 0)}"
+    )
+    try:
+        if not historico:
+            raise ValueError("sem histórico de preço")
+        await enviar_grafico(update, charts.grafico_preco, historico, cg["brl_24h_change"], legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /preco: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+# ₿ Par KAS/BTC: calculado com os candles da MEXC (KAS/USDT ÷ BTC/USDT),
+# que têm histórico desde set/2022, enquanto a CoinGecko gratuita só vai até 1 ano.
+MEXC_API = "https://api.mexc.com/api/v3"
+PERIODOS_KASBTC = {
+    # chave: (rótulo do botão, período no gráfico, intervalo do candle, quantidade de candles)
+    "30d": ("30d", "30 dias", "4h", 180),
+    "90d": ("90d", "90 dias", "1d", 90),
+    "180d": ("180d", "180 dias", "1d", 180),
+    "1a": ("1 ano", "1 ano", "1d", 365),
+    "5a": ("5 anos", "5 anos", "1W", 260),
+}
+CACHE_KASBTC = timedelta(minutes=5)
+_cache_kasbtc = {}
+
+
+async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> list:
+    """Retorna [[timestamp_ms, preço em BTC], ...] do período escolhido."""
+    agora = datetime.now(tz=timezone.utc)
+    if chave in _cache_kasbtc and agora - _cache_kasbtc[chave][0] < CACHE_KASBTC:
+        return _cache_kasbtc[chave][1]
+
+    _, _, intervalo, quantidade = PERIODOS_KASBTC[chave]
+    kas, btc = await asyncio.gather(*(
+        get_json(client, f"{MEXC_API}/klines", symbol=par, interval=intervalo, limit=quantidade)
+        for par in ("KASUSDT", "BTCUSDT")
+    ))
+    # Candle: [abertura_ms, open, high, low, close, ...]; casa os dois pares pelo dia de abertura
+    btc_por_dia = {c[0] // 86_400_000: float(c[4]) for c in btc}
+    pontos = [
+        [c[0], float(c[4]) / btc_por_dia[c[0] // 86_400_000]]
+        for c in kas
+        if c[0] // 86_400_000 in btc_por_dia
+    ]
+    _cache_kasbtc[chave] = (agora, pontos)
+    return pontos
+
+
+def teclado_kasbtc(selecionado: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton(f"• {rotulo} •" if chave == selecionado else rotulo,
+                             callback_data=f"kasbtc:{chave}")
+        for chave, (rotulo, *_) in PERIODOS_KASBTC.items()
+    ]])
+
+
+async def dados_kasbtc(chave: str):
+    """Gera (imagem, legenda) do par KAS/BTC para o período escolhido."""
+    async with httpx.AsyncClient() as client:
+        historico, kas_24h, btc_24h = await asyncio.gather(
+            historico_kasbtc(client, chave),
+            get_json(client, f"{MEXC_API}/ticker/24hr", symbol="KASUSDT"),
+            get_json(client, f"{MEXC_API}/ticker/24hr", symbol="BTCUSDT"),
+        )
+    preco_btc = float(kas_24h["lastPrice"]) / float(btc_24h["lastPrice"])
+    # Variação do par = variação do KAS em relação à variação do BTC (ambos em USDT)
+    variacao = ((1 + float(kas_24h["priceChangePercent"])) / (1 + float(btc_24h["priceChangePercent"])) - 1) * 100
+    historico = historico + [[int(datetime.now(tz=timezone.utc).timestamp() * 1000), preco_btc]]
+
+    _, periodo, _, _ = PERIODOS_KASBTC[chave]
+    inicio = datetime.fromtimestamp(historico[0][0] / 1000, tz=BRASILIA)
+    if chave == "5a":
+        periodo = f"desde {inicio:%m/%Y}"  # o KAS só é negociado na MEXC desde set/2022
+
+    imagem = await asyncio.to_thread(charts.grafico_kasbtc, historico, periodo, variacao)
+    legenda = (
+        "₿ *Par KAS/BTC*\n\n"
+        f"1 KAS = {br(preco_btc * 1e8)} sats ({br(preco_btc, 8)} BTC)\n"
+        f"{'📈' if variacao >= 0 else '📉'} 24h: {'+' if variacao >= 0 else ''}{br(variacao)}%\n\n"
+        "ℹ️ 1 sat (satoshi) = 0,00000001 BTC · dados: MEXC"
+    )
+    return imagem, legenda
+
+
+async def kasbtc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message:
+        return
+    # Aceita /kasbtc 90d, /kasbtc 1a, /kasbtc 5a... (padrão: 30 dias)
+    chave = "".join(context.args).lower().replace("anos", "a").replace("ano", "a") if context.args else "30d"
+    chave = {"30": "30d", "90": "90d", "180": "180d", "1": "1a", "5": "5a"}.get(chave, chave)
+    if chave not in PERIODOS_KASBTC:
+        chave = "30d"
+    try:
+        imagem, legenda = await dados_kasbtc(chave)
+    except Exception as e:
+        print(f"Erro /kasbtc: {e}")
+        await update.effective_message.reply_text(ERRO_API)
+        return
+    await update.effective_message.reply_photo(
+        imagem, caption=legenda, parse_mode="Markdown", reply_markup=teclado_kasbtc(chave)
+    )
+
+
+async def kasbtc_botao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Clique em um dos botões de período: troca o gráfico na mesma mensagem
+    query = update.callback_query
+    chave = query.data.split(":", 1)[1]
+    if chave not in PERIODOS_KASBTC:
+        await query.answer()
+        return
+    await query.answer(f"Carregando {PERIODOS_KASBTC[chave][1]}...")
+    try:
+        imagem, legenda = await dados_kasbtc(chave)
+        await query.edit_message_media(
+            InputMediaPhoto(imagem, caption=legenda, parse_mode="Markdown"),
+            reply_markup=teclado_kasbtc(chave),
+        )
+    except BadRequest as e:
+        # "Message is not modified": clicou de novo no período que já está na tela
+        if "not modified" not in str(e).lower():
+            print(f"Erro botão /kasbtc: {e}")
+    except Exception as e:
+        print(f"Erro botão /kasbtc: {e}")
+
+
+async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message:
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            atual = (await get_json(client, f"{KASPA_API}/info/hashrate"))["hashrate"]
+            maximo = await get_json(client, f"{KASPA_API}/info/hashrate/max")
+            historico = await historico_hashrate(client)
+        except Exception as e:
+            print(f"Erro /hashrate: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+
+    data_max = datetime.fromisoformat(maximo["blockheader"]["timestamp"])
+    message = (
+        "⛏️ *Hashrate da Rede Kaspa*\n\n"
+        f"⚡ Atual: {formatar_hashrate(atual)}\n"
+        f"🏆 Recorde: {formatar_hashrate(maximo['hashrate'])} ({data_max:%d/%m/%Y})"
+    )
+    try:
+        await enviar_grafico(update, charts.grafico_hashrate, historico, atual,
+                             maximo["hashrate"], data_max, legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /hashrate: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message:
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            dados = await get_json(client, f"{KASPA_API}/info/halving")
+            recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
+        except Exception as e:
+            print(f"Erro /halving: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+
+    proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
+    restante = proximo - datetime.now(tz=BRASILIA)
+    dias, segundos = restante.days, restante.seconds
+    message = (
+        "⏳ *Próximo Halving da Kaspa*\n\n"
+        f"📅 {proximo:%d/%m/%Y às %H:%M} (Brasília)\n"
+        f"⌛ Faltam {dias}d {segundos // 3600}h {segundos % 3600 // 60}min\n\n"
+        f"🪙 Recompensa atual: {br(recompensa, 4)} KAS/bloco\n"
+        f"🪙 Após o halving: {br(dados['nextHalvingAmount'], 4)} KAS/bloco\n\n"
+        "ℹ️ A Kaspa usa o _halving cromático_: a recompensa cai todo mês "
+        "(fator de (1/2)^(1/12)), reduzindo pela metade a cada ano."
+    )
+    try:
+        await enviar_grafico(update, charts.grafico_halving, recompensa, proximo, legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /halving: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message:
+        return
+    message = """
+⛏️ **Mineração:**
+
+• https://mineable.money/
+• https://minerstat.com/coin/KAS
+• https://whattomine.com/coins/352-kas-kheavyhash
+"""
+    try:
+        async with httpx.AsyncClient() as client:
+            atual = (await get_json(client, f"{KASPA_API}/info/hashrate"))["hashrate"]
+            recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
+            dados = await get_json(client, f"{KASPA_API}/info/halving")
+            historico = await historico_hashrate(client)
+        proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
+        await enviar_grafico(update, charts.grafico_mineracao, historico, atual, recompensa,
+                             proximo, legenda=message)
+    except Exception as e:
+        # Sem dados ou sem gráfico: manda pelo menos os links
+        print(f"Erro gráfico /mineracao: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
 
 async def error_handler(update, context):
     print(f"Erro: {context.error}")
@@ -377,8 +719,45 @@ async def error_handler(update, context):
 
 
 # 🔑 Inicialização do bot
+# 📋 Menu de comandos do Telegram (o "/" no campo de mensagem), atualizado ao iniciar o bot
+MENU_COMANDOS = [
+    ("preco", "Preço atual do KAS"),
+    ("hashrate", "Hashrate da rede"),
+    ("halving", "Próxima redução da recompensa"),
+    ("kasbtc", "Par KAS/BTC com gráfico (30d a 5 anos)"),
+    ("regras", "Regras do Grupo"),
+    ("info", "Informações gerais sobre Kaspa"),
+    ("analises", "Ferramentas de Análise"),
+    ("ferramentas", "Ferramentas e Serviços Técnicos"),
+    ("media", "Comunidade e Mídia"),
+    ("shop", "Mercado e comércio"),
+    ("projetos", "Projetos e Recursos Criativos"),
+    ("jogos", "Jogos"),
+    ("educacao", "Educacional"),
+    ("defi", "DeFi, Tokens e Layer 2"),
+    ("mineracao", "Mineração"),
+    ("p2p", "P2P Oficiais do Grupo"),
+    ("exchangesg", "Corretoras Grandes"),
+    ("exchangesp", "Corretoras Pequenas"),
+    ("swap", "Serviços de Swap"),
+    ("fiat_cripto", "Plataformas Fiat/Cripto"),
+    ("hotwallets", "Hotwallets Recomendadas e Outras"),
+    ("hardwallets", "Coldwallets e Hardwallets"),
+    ("twitter", "Melhores Contas no X (Twitter)"),
+    ("doacoes", "Doações para o Projeto"),
+    ("help", "Lista todos os comandos"),
+]
+
+
+async def registrar_menu(app) -> None:
+    try:
+        await app.bot.set_my_commands(MENU_COMANDOS)
+    except Exception as e:
+        print(f"Erro ao registrar menu de comandos: {e}")
+
+
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN or "").build()
+    app = ApplicationBuilder().token(BOT_TOKEN or "").post_init(registrar_menu).build()
 
     # 🔗 Adicionando comandos
     app.add_handler(CommandHandler("start", start))
@@ -390,14 +769,23 @@ def main():
     app.add_handler(CommandHandler("media", media))
     app.add_handler(CommandHandler("shop", shop))
     app.add_handler(CommandHandler("projetos", projetos))
+    app.add_handler(CommandHandler("jogos", jogos))
+    app.add_handler(CommandHandler("educacao", educacao))
+    app.add_handler(CommandHandler("defi", defi))
+    app.add_handler(CommandHandler("mineracao", mineracao))
+    app.add_handler(CommandHandler("preco", preco))
+    app.add_handler(CommandHandler("hashrate", hashrate))
+    app.add_handler(CommandHandler("halving", halving))
+    app.add_handler(CommandHandler("kasbtc", kasbtc))
+    app.add_handler(CallbackQueryHandler(kasbtc_botao, pattern=r"^kasbtc:"))
     app.add_handler(CommandHandler("p2p", p2p))
-    app.add_handler(CommandHandler("exchangesG", exchangesG))
-    app.add_handler(CommandHandler("exchangesP", exchangesP))
+    app.add_handler(CommandHandler("exchangesg", exchangesG))
+    app.add_handler(CommandHandler("exchangesp", exchangesP))
     app.add_handler(CommandHandler("swap", swap))
     app.add_handler(CommandHandler("fiat_cripto", fiat_cripto))
     app.add_handler(CommandHandler("hotwallets", hotwallets))
     app.add_handler(CommandHandler("hardwallets", hardwallets))
-    app.add_handler(CommandHandler("contasX", contasX))
+    app.add_handler(CommandHandler("twitter", twitter))
     app.add_handler(CommandHandler("doacoes", doacoes))
     app.add_handler(CommandHandler("hotwallets_caution", hotwallets))
     

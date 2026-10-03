@@ -24,22 +24,36 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 ```
 /start         - Mensagem de boas-vindas
 /help          - Lista todos os comandos
-/analises      - Ferramentas de Análise
+/preco         - Preço atual do KAS (USD/BRL/sats)
+/kasbtc        - Par KAS/BTC em satoshis, com gráfico e botões de período
+                 (30d, 90d, 180d, 1 ano, 5 anos) — também aceita /kasbtc 90d, /kasbtc 1a...
+/hashrate      - Hashrate atual e recorde da rede
+/halving       - Próxima redução da recompensa
 /regras        - Regras do Grupo
 /info          - Informações gerais sobre Kaspa
+/analises      - Ferramentas de Análise
 /ferramentas   - Ferramentas e Serviços Técnicos
 /media         - Comunidade e Mídia
 /shop          - Mercado e comércio
 /projetos      - Projetos e Recursos Criativos
-/p2p           - P2P Oficial do Grupo
-/exchangesG    - Corretoras Grandes
-/exchangesP    - Corretoras Pequenas
+/jogos         - Jogos
+/educacao      - Educacional
+/defi          - DeFi, Tokens e Layer 2
+/mineracao     - Mineração
+/p2p           - P2P Oficiais do Grupo
+/exchangesg    - Corretoras Grandes
+/exchangesp    - Corretoras Pequenas
 /swap          - Serviços de Swap
 /fiat_cripto   - Plataformas Fiat/Cripto
 /hotwallets    - Hotwallets Recomendadas e Outras
 /hardwallets   - Coldwallets e Hardwallets
-/contasX       - Melhores Contas no X
+/twitter       - Melhores Contas no X (Twitter)
+/doacoes       - Doações para o Projeto
 ```
+
+Os comandos `/preco`, `/hashrate`, `/halving` e `/mineracao` usam a [API da Kaspa](https://api.kaspa.org/docs)
+(a cotação em BRL vem da CoinGecko) e respondem com um gráfico gerado em `charts.py` (matplotlib).
+O menu de comandos do Telegram é registrado automaticamente quando o bot inicia.
 
 ## Como rodar localmente
 
