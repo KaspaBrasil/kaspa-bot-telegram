@@ -28,7 +28,12 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 /kasbtc        - Par KAS/BTC em satoshis, com gráfico e botões de período
                  (30d, 90d, 180d, 1 ano, 5 anos) — também aceita /kasbtc 90d, /kasbtc 1a...
 /hashrate      - Hashrate atual e recorde da rede
-/halving       - Próxima redução da recompensa
+/halving       - Próxima redução da recompensa e emissão diária
+/supply        - Quanto já foi minerado, inflação e projeção
+/rede          - Transações por dia e status da rede
+/baleias       - Maiores endereços (com nomes conhecidos) e concentração
+/calc          - Calculadora de mineração: /calc 21 [watts] [R$/kWh]
+/sou           - Em qual faixa de holders você está: /sou 5000
 /regras        - Regras do Grupo
 /info          - Informações gerais sobre Kaspa
 /analises      - Ferramentas de Análise
@@ -51,7 +56,7 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 /doacoes       - Doações para o Projeto
 ```
 
-Os comandos `/preco`, `/hashrate`, `/halving` e `/mineracao` usam a [API da Kaspa](https://api.kaspa.org/docs)
+Os comandos de dados ao vivo usam a [API da Kaspa](https://api.kaspa.org/docs)
 (a cotação em BRL vem da CoinGecko) e respondem com um gráfico gerado em `charts.py` (matplotlib).
 O menu de comandos do Telegram é registrado automaticamente quando o bot inicia.
 
