@@ -31,6 +31,11 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 /halving       - Próxima redução da recompensa e emissão diária
 /supply        - Quanto já foi minerado, inflação e projeção
 /rede          - Transações por dia e status da rede
+/ativos        - Endereços ativos por hora vs. dia típico do mês, com gráfico
+/tx            - Consultar transação: /tx <hash ou link do explorer>
+                 (confirmações, valor, taxa, origem e destino com nomes conhecidos)
+/saldo         - Consultar carteira: /saldo kaspa:... (saldo em KAS/BRL, posição entre
+                 os holders, variação em 30 dias e UTXOs). Em grupos responde no privado
 /baleias       - Maiores endereços (com nomes conhecidos) e concentração
 /calc          - Calculadora de mineração: /calc 21 [watts] [R$/kWh]
 /sou           - Em qual faixa de holders você está: /sou 5000
