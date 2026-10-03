@@ -12,7 +12,7 @@ from telegram.ext import ContextTypes
 import charts
 from api import EXPLORER, KASPA_API, cotacao, distribuicao, get_json, maiores_enderecos, nomes_conhecidos, \
     opcional, supply_kas
-from envio import ERRO_API, falha_api, pode_responder, responder_com_grafico
+from envio import falha_api, pode_responder, responder_com_grafico
 from formatacao import BRASILIA, br, br_minimo, br_pct, ler_numero, nome_endereco, sem_markdown, valor_em_reais
 
 RE_ENDERECO = re.compile(r"kaspa:[a-z0-9]{61,63}")
@@ -232,6 +232,13 @@ async def texto_saldo(endereco: str) -> str:
     return "\n".join(linhas)
 
 
+ENDERECO_INVALIDO = (
+    "❓ *Endereço inválido*\n\n"
+    "Confira se você copiou o endereço completo, sem faltar nem sobrar caracteres. "
+    "Um endereço de Kaspa começa com `kaspa:` e tem mais de 60 letras e números."
+)
+
+
 async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not pode_responder(update, "saldo", timedelta(seconds=3)):
         return
@@ -250,8 +257,11 @@ async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         texto = await texto_saldo(achado.group(0))
     except Exception as e:
-        print(f"Erro /saldo: {e}")
-        await mensagem.reply_text(ERRO_API)
+        # A API responde 400 ("Invalid address") quando o endereço tem o formato certo mas não é válido
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 400:
+            await mensagem.reply_text(ENDERECO_INVALIDO, parse_mode="Markdown")
+        else:
+            await falha_api(update, "saldo", e)
         return
 
     if update.effective_chat and update.effective_chat.type == "private":

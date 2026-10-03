@@ -70,6 +70,25 @@ no máximo 1x por minuto (depois é reenviado pelo `file_id` do Telegram, sem no
 máximo 2 gráficos são gerados ao mesmo tempo e cada usuário só pode repetir o mesmo comando com
 gráfico a cada 10 segundos.
 
+## Estrutura do código
+
+```
+bot.py            Inicialização e registro dos comandos
+textos.py         Textos fixos: boas-vindas, ajuda, menu e páginas de links (edite aqui)
+comandos/         Handlers dos comandos, por assunto
+  paginas.py        /start, /help e as páginas de links
+  mercado.py        /preco, /kasbtc
+  mineracao.py      /hashrate, /halving, /supply, /mineracao, /calc
+  rede.py           /rede, /ativos
+  carteiras.py      /sou, /baleias, /saldo
+  transacoes.py     /tx
+api.py            Acesso às APIs com cache
+envio.py          Limite por usuário e cache/envio dos gráficos
+charts.py         Gráficos (matplotlib)
+emissao.py        Blocos por segundo e redução mensal da recompensa
+formatacao.py     Números, datas e endereços no padrão brasileiro
+```
+
 ## Como rodar localmente
 
 1. Clone este repositório e instale as dependências:

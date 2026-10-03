@@ -12,7 +12,7 @@ from api import KASPA_API, cotacao, get_json, hashrate_atual, historico_hashrate
 from envio import enviar_grafico, falha_api, pode_responder, responder_com_grafico
 from formatacao import BRASILIA, br, br_pct, formatar_hashrate, ler_numero, mes_ano, tempo_restante, \
     valor_em_reais
-from kaspa import emissao_diaria, projecao_supply, recompensa_em, rendimento_por_th
+from emissao import emissao_diaria, projecao_supply, recompensa_em, rendimento_por_th
 from textos import LINKS_MINERACAO
 
 

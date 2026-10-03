@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
 
 from formatacao import BRASILIA, br, formatar_hashrate, mediana, mes_ano  # noqa: E402
-from kaspa import MES_KASPA, emissao_diaria, projecao_supply  # noqa: E402
+from emissao import MES_KASPA, emissao_diaria, projecao_supply  # noqa: E402
 
 # 🎨 Paleta (fundo escuro, uma série por gráfico)
 FUNDO = "#101C1F"
