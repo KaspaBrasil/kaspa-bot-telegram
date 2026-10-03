@@ -55,6 +55,11 @@ Os comandos `/preco`, `/hashrate`, `/halving` e `/mineracao` usam a [API da Kasp
 (a cotação em BRL vem da CoinGecko) e respondem com um gráfico gerado em `charts.py` (matplotlib).
 O menu de comandos do Telegram é registrado automaticamente quando o bot inicia.
 
+**Proteção contra abuso:** as respostas das APIs ficam 1 minuto em cache, cada gráfico é gerado
+no máximo 1x por minuto (depois é reenviado pelo `file_id` do Telegram, sem novo upload), no
+máximo 2 gráficos são gerados ao mesmo tempo e cada usuário só pode repetir o mesmo comando com
+gráfico a cada 10 segundos.
+
 ## Como rodar localmente
 
 1. Clone este repositório e instale as dependências:

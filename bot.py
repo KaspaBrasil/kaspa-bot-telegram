@@ -448,35 +448,87 @@ async def doacoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 KASPA_API = "https://api.kaspa.org"
 COINGECKO_API = "https://api.coingecko.com/api/v3"
 ERRO_API = "⚠️ Não foi possível obter os dados agora. Tente novamente em instantes."
-CACHE_HISTORICO = timedelta(minutes=30)
-_historico_hashrate = {"dados": None, "quando": None}
+
+# 🛡️ Proteção contra abuso / economia de recursos:
+# - respostas das APIs ficam em cache (no máximo 1 consulta por minuto a cada endpoint)
+# - cada gráfico é gerado no máximo 1x por minuto; nesse intervalo o bot reenvia a mesma
+#   imagem pelo file_id do Telegram (sem gerar nem fazer upload de novo)
+# - no máximo 2 gráficos sendo gerados ao mesmo tempo
+# - cada usuário pode repetir o mesmo comando com gráfico a cada 10 segundos
+#   (e trocar o período do /kasbtc nos botões a cada 3 segundos)
+CACHE_API = 60  # segundos
+CACHE_GRAFICO = timedelta(seconds=60)
+INTERVALO_POR_USUARIO = timedelta(seconds=10)
+_cache_api = {}
+_cache_graficos = {}
+_ultimo_pedido = {}
+_limite_graficos = asyncio.Semaphore(2)
 
 
-async def get_json(client: httpx.AsyncClient, url: str, **params):
+async def get_json(client: httpx.AsyncClient, url: str, cache: int = CACHE_API, **params):
+    chave = (url, tuple(sorted(params.items())))
+    agora = datetime.now(tz=timezone.utc)
+    if chave in _cache_api and (agora - _cache_api[chave][0]).total_seconds() < cache:
+        return _cache_api[chave][1]
     response = await client.get(url, params=params, timeout=20)
     response.raise_for_status()
-    return response.json()
+    _cache_api[chave] = (agora, response.json())
+    return _cache_api[chave][1]
 
 
 async def historico_hashrate(client: httpx.AsyncClient) -> list:
-    # Histórico diário (~300 KB): guardado em cache para não baixar a cada comando
+    # Histórico diário (~300 KB): muda pouco, então fica 30 minutos em cache
+    return await get_json(client, f"{KASPA_API}/info/hashrate/history", cache=1800, resolution="1d")
+
+
+def pode_pedir(update: Update, comando: str, intervalo: timedelta = INTERVALO_POR_USUARIO) -> bool:
+    """Limita quantas vezes cada usuário pode usar o mesmo comando com gráfico."""
+    chave = (update.effective_user.id if update.effective_user else None, comando)
     agora = datetime.now(tz=timezone.utc)
-    if not _historico_hashrate["dados"] or agora - _historico_hashrate["quando"] > CACHE_HISTORICO:
-        _historico_hashrate["dados"] = await get_json(
-            client, f"{KASPA_API}/info/hashrate/history", resolution="1d"
-        )
-        _historico_hashrate["quando"] = agora
-    return _historico_hashrate["dados"]
+    if chave in _ultimo_pedido and agora - _ultimo_pedido[chave] < intervalo:
+        print(f"[limite] /{comando} ignorado do usuário {chave[0]}")
+        return False
+    if len(_ultimo_pedido) > 5000:  # evita crescer para sempre
+        _ultimo_pedido.clear()
+    _ultimo_pedido[chave] = agora
+    return True
 
 
-async def enviar_grafico(update: Update, gerar, *args, legenda: str) -> None:
-    # O matplotlib bloqueia, então o gráfico é gerado em outra thread
-    imagem = await asyncio.to_thread(gerar, *args)
-    await update.effective_message.reply_photo(imagem, caption=legenda, parse_mode="Markdown")
+_travas_graficos = {}
+
+
+async def grafico_em_cache(chave: str, gerar, *args):
+    """Devolve (foto, legenda_em_cache). Se o gráfico é recente, reaproveita: o file_id do
+    Telegram (sem novo upload) ou o PNG que acabou de ser gerado. Senão, gera um PNG novo."""
+    # Uma trava por gráfico: se 10 pessoas pedirem ao mesmo tempo, só o primeiro pedido gera
+    async with _travas_graficos.setdefault(chave, asyncio.Lock()):
+        agora = datetime.now(tz=timezone.utc)
+        if chave in _cache_graficos and agora - _cache_graficos[chave][0] < CACHE_GRAFICO:
+            return _cache_graficos[chave][1], _cache_graficos[chave][2]
+        async with _limite_graficos:
+            # O matplotlib bloqueia, então o gráfico é gerado em outra thread
+            png = (await asyncio.to_thread(gerar, *args)).getvalue()
+        _cache_graficos[chave] = (agora, png, None)
+        return png, None
+
+
+def guardar_grafico(chave: str, mensagem, legenda: str) -> None:
+    if mensagem and mensagem.photo:
+        _cache_graficos[chave] = (datetime.now(tz=timezone.utc), mensagem.photo[-1].file_id, legenda)
+
+
+async def enviar_grafico(update: Update, chave: str, gerar, *args, legenda: str, reply_markup=None) -> None:
+    foto, legenda_cache = await grafico_em_cache(chave, gerar, *args)
+    legenda = legenda_cache or legenda  # mesma legenda da imagem reaproveitada
+    mensagem = await update.effective_message.reply_photo(
+        foto, caption=legenda, parse_mode="Markdown", reply_markup=reply_markup
+    )
+    if not legenda_cache:
+        guardar_grafico(chave, mensagem, legenda)
 
 
 async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
+    if not update.effective_message or not pode_pedir(update, "preco"):
         return
     async with httpx.AsyncClient() as client:
         try:
@@ -509,7 +561,7 @@ async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         if not historico:
             raise ValueError("sem histórico de preço")
-        await enviar_grafico(update, charts.grafico_preco, historico, cg["brl_24h_change"], legenda=message)
+        await enviar_grafico(update, "preco", charts.grafico_preco, historico, cg["brl_24h_change"], legenda=message)
     except Exception as e:
         print(f"Erro gráfico /preco: {e}")
         await update.effective_message.reply_text(message, parse_mode="Markdown")
@@ -526,19 +578,13 @@ PERIODOS_KASBTC = {
     "1a": ("1 ano", "1 ano", "1d", 365),
     "5a": ("5 anos", "5 anos", "1W", 260),
 }
-CACHE_KASBTC = timedelta(minutes=5)
-_cache_kasbtc = {}
 
 
 async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> list:
     """Retorna [[timestamp_ms, preço em BTC], ...] do período escolhido."""
-    agora = datetime.now(tz=timezone.utc)
-    if chave in _cache_kasbtc and agora - _cache_kasbtc[chave][0] < CACHE_KASBTC:
-        return _cache_kasbtc[chave][1]
-
     _, _, intervalo, quantidade = PERIODOS_KASBTC[chave]
     kas, btc = await asyncio.gather(*(
-        get_json(client, f"{MEXC_API}/klines", symbol=par, interval=intervalo, limit=quantidade)
+        get_json(client, f"{MEXC_API}/klines", cache=300, symbol=par, interval=intervalo, limit=quantidade)
         for par in ("KASUSDT", "BTCUSDT")
     ))
     # Candle: [abertura_ms, open, high, low, close, ...]; casa os dois pares pelo dia de abertura
@@ -548,7 +594,6 @@ async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> list:
         for c in kas
         if c[0] // 86_400_000 in btc_por_dia
     ]
-    _cache_kasbtc[chave] = (agora, pontos)
     return pontos
 
 
@@ -561,7 +606,7 @@ def teclado_kasbtc(selecionado: str) -> InlineKeyboardMarkup:
 
 
 async def dados_kasbtc(chave: str):
-    """Gera (imagem, legenda) do par KAS/BTC para o período escolhido."""
+    """Busca os dados e devolve (foto, legenda, veio_do_cache) do par KAS/BTC no período escolhido."""
     async with httpx.AsyncClient() as client:
         historico, kas_24h, btc_24h = await asyncio.gather(
             historico_kasbtc(client, chave),
@@ -578,18 +623,20 @@ async def dados_kasbtc(chave: str):
     if chave == "5a":
         periodo = f"desde {inicio:%m/%Y}"  # o KAS só é negociado na MEXC desde set/2022
 
-    imagem = await asyncio.to_thread(charts.grafico_kasbtc, historico, periodo, variacao)
     legenda = (
         "₿ *Par KAS/BTC*\n\n"
         f"1 KAS = {br(preco_btc * 1e8)} sats ({br(preco_btc, 8)} BTC)\n"
         f"{'📈' if variacao >= 0 else '📉'} 24h: {'+' if variacao >= 0 else ''}{br(variacao)}%\n\n"
         "ℹ️ 1 sat (satoshi) = 0,00000001 BTC · dados: MEXC"
     )
-    return imagem, legenda
+    foto, legenda_cache = await grafico_em_cache(
+        f"kasbtc:{chave}", charts.grafico_kasbtc, historico, periodo, variacao
+    )
+    return foto, legenda_cache or legenda, legenda_cache is not None
 
 
 async def kasbtc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
+    if not update.effective_message or not pode_pedir(update, "kasbtc"):
         return
     # Aceita /kasbtc 90d, /kasbtc 1a, /kasbtc 5a... (padrão: 30 dias)
     chave = "".join(context.args).lower().replace("anos", "a").replace("ano", "a") if context.args else "30d"
@@ -597,14 +644,16 @@ async def kasbtc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if chave not in PERIODOS_KASBTC:
         chave = "30d"
     try:
-        imagem, legenda = await dados_kasbtc(chave)
+        foto, legenda, do_cache = await dados_kasbtc(chave)
     except Exception as e:
         print(f"Erro /kasbtc: {e}")
         await update.effective_message.reply_text(ERRO_API)
         return
-    await update.effective_message.reply_photo(
-        imagem, caption=legenda, parse_mode="Markdown", reply_markup=teclado_kasbtc(chave)
+    mensagem = await update.effective_message.reply_photo(
+        foto, caption=legenda, parse_mode="Markdown", reply_markup=teclado_kasbtc(chave)
     )
+    if not do_cache:
+        guardar_grafico(f"kasbtc:{chave}", mensagem, legenda)
 
 
 async def kasbtc_botao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -614,13 +663,18 @@ async def kasbtc_botao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if chave not in PERIODOS_KASBTC:
         await query.answer()
         return
+    if not pode_pedir(update, "kasbtc_botao", timedelta(seconds=3)):
+        await query.answer("⏳ Aguarde alguns segundos antes de trocar de novo.")
+        return
     await query.answer(f"Carregando {PERIODOS_KASBTC[chave][1]}...")
     try:
-        imagem, legenda = await dados_kasbtc(chave)
-        await query.edit_message_media(
-            InputMediaPhoto(imagem, caption=legenda, parse_mode="Markdown"),
+        foto, legenda, do_cache = await dados_kasbtc(chave)
+        mensagem = await query.edit_message_media(
+            InputMediaPhoto(foto, caption=legenda, parse_mode="Markdown"),
             reply_markup=teclado_kasbtc(chave),
         )
+        if not do_cache and mensagem is not True:
+            guardar_grafico(f"kasbtc:{chave}", mensagem, legenda)
     except BadRequest as e:
         # "Message is not modified": clicou de novo no período que já está na tela
         if "not modified" not in str(e).lower():
@@ -630,7 +684,7 @@ async def kasbtc_botao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
+    if not update.effective_message or not pode_pedir(update, "hashrate"):
         return
     async with httpx.AsyncClient() as client:
         try:
@@ -649,7 +703,7 @@ async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"🏆 Recorde: {formatar_hashrate(maximo['hashrate'])} ({data_max:%d/%m/%Y})"
     )
     try:
-        await enviar_grafico(update, charts.grafico_hashrate, historico, atual,
+        await enviar_grafico(update, "hashrate", charts.grafico_hashrate, historico, atual,
                              maximo["hashrate"], data_max, legenda=message)
     except Exception as e:
         print(f"Erro gráfico /hashrate: {e}")
@@ -657,7 +711,7 @@ async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
+    if not update.effective_message or not pode_pedir(update, "halving"):
         return
     async with httpx.AsyncClient() as client:
         try:
@@ -681,14 +735,14 @@ async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "(fator de (1/2)^(1/12)), reduzindo pela metade a cada ano."
     )
     try:
-        await enviar_grafico(update, charts.grafico_halving, recompensa, proximo, legenda=message)
+        await enviar_grafico(update, "halving", charts.grafico_halving, recompensa, proximo, legenda=message)
     except Exception as e:
         print(f"Erro gráfico /halving: {e}")
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
 async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
+    if not update.effective_message or not pode_pedir(update, "mineracao"):
         return
     message = """
 ⛏️ **Mineração:**
@@ -704,7 +758,7 @@ async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             dados = await get_json(client, f"{KASPA_API}/info/halving")
             historico = await historico_hashrate(client)
         proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
-        await enviar_grafico(update, charts.grafico_mineracao, historico, atual, recompensa,
+        await enviar_grafico(update, "mineracao", charts.grafico_mineracao, historico, atual, recompensa,
                              proximo, legenda=message)
     except Exception as e:
         # Sem dados ou sem gráfico: manda pelo menos os links
@@ -793,7 +847,8 @@ def main():
     
     print("Bot Kaspa Brasil rodando...")
 
-    app.run_polling()
+    # drop_pending_updates: ignora comandos acumulados enquanto o bot estava fora do ar
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
