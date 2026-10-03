@@ -250,3 +250,115 @@ def grafico_mineracao(historico: list, atual_th: float, recompensa: float, proxi
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=15))
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{mdates.num2date(x):%d/%m}"))
     return _png(fig)
+
+
+def _eixo_limpo(ax):
+    for lado in ("top", "right", "left"):
+        ax.spines[lado].set_visible(False)
+    ax.spines["bottom"].set_color(GRADE)
+    ax.tick_params(length=0, labelsize=9)
+    ax.set_axisbelow(True)
+
+
+def projecao_supply(circulante: float, maximo: float, recompensa: float, proximo: datetime, meses: int):
+    """Projeta o supply mês a mês: [(data, supply)]. A recompensa cai (1/2)^(1/12) a cada mês."""
+    pontos = [(datetime.now(tz=BRASILIA), circulante)]
+    supply = circulante
+    # até a próxima redução, com a recompensa atual
+    supply += recompensa * 10 * (proximo - pontos[0][0]).total_seconds()
+    pontos.append((proximo, min(supply, maximo)))
+    for k in range(1, meses + 1):
+        recompensa_mes = recompensa * 2 ** (-k / 12)
+        supply += recompensa_mes * 10 * MES_KASPA.total_seconds()
+        pontos.append((proximo + k * MES_KASPA, min(supply, maximo)))
+    return pontos
+
+
+def grafico_supply(circulante: float, maximo: float, recompensa: float, proximo: datetime) -> io.BytesIO:
+    pct = circulante / maximo * 100
+    pontos = projecao_supply(circulante, maximo, recompensa, proximo, 12 * 7)
+    datas = [d for d, _ in pontos]
+    pcts = [s / maximo * 100 for _, s in pontos]
+
+    fig = plt.figure(figsize=(10, 5.6), dpi=130, facecolor=FUNDO)
+    fig.text(0.05, 0.92, "Supply de Kaspa · quanto já foi minerado", fontsize=13, color=TEXTO_2)
+    fig.text(0.05, 0.80, f"{br(pct)}%", fontsize=30, fontweight="bold", color=TEXTO)
+    fig.text(0.95, 0.83, f"faltam {br((maximo - circulante) / 1e6, 0)} mi KAS", fontsize=14,
+             fontweight="bold", color=TEXTO, ha="right")
+    fig.text(0.05, 0.025, "Projeção considerando a redução mensal da recompensa", fontsize=8, color=TEXTO_2)
+    fig.text(0.95, 0.025, "Kaspa Brasil · dados: api.kaspa.org", fontsize=8, color=TEXTO_2, ha="right")
+
+    # Barra de progresso
+    barra = fig.add_axes((0.05, 0.73, 0.90, 0.035), facecolor=FUNDO)
+    barra.barh([0], [100], color=GRADE, height=1)
+    barra.barh([0], [pct], color=DESTAQUE, height=1)
+    barra.set_xlim(0, 100)
+    barra.axis("off")
+    fig.text(0.05, 0.685, f"{br(circulante / 1e9)} bi minerados de {br(maximo / 1e9)} bi (supply máximo)",
+             fontsize=10, color=TEXTO_2)
+
+    # Projeção do % minerado
+    ax = fig.add_axes((0.08, 0.10, 0.88, 0.50), facecolor=FUNDO)
+    _eixo_limpo(ax)
+    ax.grid(axis="y", color=GRADE, linewidth=0.8)
+    ax.plot(datas, pcts, color=DESTAQUE, linewidth=2)
+    ax.fill_between(datas, pcts, pcts[0], color=DESTAQUE, alpha=0.12, linewidth=0)
+    ax.set_xlim(datas[0], datas[-1])
+    ax.set_ylim(pcts[0] - 0.3, 100.15)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{br(y, 1)}%"))
+    _eixo_x_datas(ax, intervalo_meses=12)
+    for alvo in (98, 99, 99.9):
+        marco = next(((d, p) for d, p in zip(datas, pcts) if p >= alvo), None)
+        if marco:
+            ax.scatter([marco[0]], [marco[1]], s=50, color=DESTAQUE, edgecolor=FUNDO, linewidth=2, zorder=3)
+            ax.annotate(f"{br(alvo, 1 if alvo % 1 else 0)}% em {_mes_ano(marco[0])}", marco,
+                        xytext=(8, -14), textcoords="offset points", fontsize=9, color=TEXTO)
+    return _png(fig)
+
+
+def grafico_baleias(maiores: list, circulante: float) -> io.BytesIO:
+    """maiores: [(nome, quantidade_kas)] dos 10 maiores endereços."""
+    nomes = [nome for nome, _ in maiores][::-1]
+    pcts = [qtd / circulante * 100 for _, qtd in maiores][::-1]
+    soma = sum(qtd for _, qtd in maiores) / circulante * 100
+
+    fig = plt.figure(figsize=(10, 5.6), dpi=130, facecolor=FUNDO)
+    fig.text(0.05, 0.92, "Maiores endereços de Kaspa · % do supply circulante", fontsize=13, color=TEXTO_2)
+    fig.text(0.05, 0.80, f"{br(soma, 1)}%", fontsize=30, fontweight="bold", color=TEXTO)
+    fig.text(0.05, 0.74, "estão nos 10 maiores endereços (corretoras guardam o saldo de muitos usuários)",
+             fontsize=10, color=TEXTO_2)
+    fig.text(0.95, 0.025, "Kaspa Brasil · dados: api.kaspa.org", fontsize=8, color=TEXTO_2, ha="right")
+
+    ax = fig.add_axes((0.30, 0.06, 0.62, 0.62), facecolor=FUNDO)
+    _eixo_limpo(ax)
+    ax.spines["bottom"].set_visible(False)
+    ax.set_xticks([])
+    ax.barh(range(len(pcts)), pcts, color=DESTAQUE, height=0.62)
+    ax.set_yticks(range(len(nomes)), nomes, fontsize=10, color=TEXTO)
+    for i, p in enumerate(pcts):
+        ax.annotate(f"{br(p)}%", (p, i), xytext=(6, 0), textcoords="offset points",
+                    va="center", fontsize=9, color=TEXTO_2)
+    ax.set_xlim(0, max(pcts) * 1.15)
+    return _png(fig)
+
+
+def grafico_rede(dias: list, ultimas_24h: int) -> io.BytesIO:
+    """dias: [(data, transações)] dos últimos 30 dias completos."""
+    datas = [d for d, _ in dias]
+    valores = [v for _, v in dias]
+    media = sum(valores) / len(valores)
+
+    fig, ax = _figura(
+        "Transações por dia na rede Kaspa · últimos 30 dias",
+        f"média {br(media, 0)}/dia   ·   pico {br(max(valores), 0)}   ·   "
+        f"~{br(media / 86400)} transações por segundo",
+        f"{br(ultimas_24h, 0)} nas últimas 24h",
+        (ultimas_24h / media - 1) * 100,
+        "24h vs. média de 30 dias",
+        fonte="api.kaspa.org",
+    )
+    ax.bar(datas, valores, color=DESTAQUE, width=0.7)
+    ax.set_xlim(datas[0] - timedelta(days=0.6), datas[-1] + timedelta(days=0.6))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{br(y / 1000, 0)} mil"))
+    _eixo_x_datas(ax)
+    return _png(fig)

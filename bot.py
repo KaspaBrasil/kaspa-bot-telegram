@@ -1,5 +1,7 @@
 import asyncio
+import math
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -35,10 +37,17 @@ Use /help para ver todos os comandos disponíveis.
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = (
         "📖 *Comandos disponíveis:*  \n\n"
+        "📈 Dados ao vivo:  \n"
         "/preco — Preço atual do KAS  \n"
         "/kasbtc — Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)  \n"
         "/hashrate — Hashrate da rede  \n"
-        "/halving — Próxima redução da recompensa  \n\n"
+        "/halving — Próxima redução da recompensa  \n"
+        "/supply — Quanto já foi minerado e emissão  \n"
+        "/rede — Transações e status da rede  \n"
+        "/baleias — Maiores endereços e concentração  \n"
+        "/calc — Calculadora de mineração (ex: /calc 21)  \n"
+        "/sou — Em qual faixa de holders você está (ex: /sou 5000)  \n\n"
+        "📚 Links e comunidade:  \n"
         "/regras — Regras do Grupo  \n"
         "/info — Informações gerais sobre Kaspa  \n"
         "/analises — Ferramentas de Análise  \n"
@@ -472,8 +481,10 @@ async def get_json(client: httpx.AsyncClient, url: str, cache: int = CACHE_API, 
         return _cache_api[chave][1]
     response = await client.get(url, params=params, timeout=20)
     response.raise_for_status()
-    _cache_api[chave] = (agora, response.json())
-    return _cache_api[chave][1]
+    dados = response.json()
+    if cache:  # cache=0: não guarda (respostas grandes que são resumidas por quem chamou)
+        _cache_api[chave] = (agora, dados)
+    return dados
 
 
 async def historico_hashrate(client: httpx.AsyncClient) -> list:
@@ -527,6 +538,28 @@ async def enviar_grafico(update: Update, chave: str, gerar, *args, legenda: str,
         guardar_grafico(chave, mensagem, legenda)
 
 
+async def cotacao(client: httpx.AsyncClient):
+    """Cotação do KAS na CoinGecko (USD, BRL, BTC, variação 24h e market cap). None se falhar."""
+    try:
+        return (await get_json(
+            client, f"{COINGECKO_API}/simple/price", ids="kaspa", vs_currencies="usd,brl,btc",
+            include_24hr_change="true", include_market_cap="true",
+        ))["kaspa"]
+    except Exception as e:
+        print(f"Erro CoinGecko: {e}")
+        return None
+
+
+async def supply_kas(client: httpx.AsyncClient):
+    """(circulante, máximo) em KAS. A API retorna em sompi (1 KAS = 100 milhões de sompi)."""
+    dados = await get_json(client, f"{KASPA_API}/info/coinsupply")
+    return int(dados["circulatingSupply"]) / 1e8, int(dados["maxSupply"]) / 1e8
+
+
+def valor_em_reais(kas: float, cg) -> str:
+    return f" ≈ R$ {br(kas * cg['brl'])}" if cg else ""
+
+
 async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_message or not pode_pedir(update, "preco"):
         return
@@ -534,32 +567,33 @@ async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             price_usd = (await get_json(client, f"{KASPA_API}/info/price"))["price"]
             marketcap = (await get_json(client, f"{KASPA_API}/info/marketcap"))["marketcap"]
+            _, maximo = await supply_kas(client)
         except Exception as e:
             print(f"Erro /preco: {e}")
             await update.effective_message.reply_text(ERRO_API)
             return
 
         # Cotação em BRL, variação 24h e histórico de 30 dias (opcional: se falhar, mostra só USD)
+        cg = await cotacao(client)
         try:
-            cg = (await get_json(
-                client, f"{COINGECKO_API}/simple/price",
-                ids="kaspa", vs_currencies="brl,btc", include_24hr_change="true",
-            ))["kaspa"]
             historico = (await get_json(
                 client, f"{COINGECKO_API}/coins/kaspa/market_chart", vs_currency="brl", days=30,
             ))["prices"]
         except Exception as e:
             print(f"Erro CoinGecko: {e}")
-            cg = historico = None
+            historico = None
 
     message = (
         "💲 *Preço do KAS*\n\n"
         f"🇺🇸 US$ {br(price_usd, 5)}\n"
         + (f"🇧🇷 R$ {br(cg['brl'], 4)}\n₿ {br(cg['btc'] * 1e8)} sats\n" if cg else "")
-        + f"🏦 Market cap: US$ {br(marketcap, 0)}"
+        + f"\n🏦 Market cap: US$ {br(marketcap, 0)}"
+        + (f"\n🏦 Market cap: R$ {br(cg['brl_market_cap'], 0)}" if cg else "")
+        # Totalmente diluído: valor de mercado se todo o supply máximo já estivesse minerado
+        + f"\n🧮 Totalmente diluído: US$ {br(maximo * price_usd, 0)}"
     )
     try:
-        if not historico:
+        if not historico or not cg:
             raise ValueError("sem histórico de preço")
         await enviar_grafico(update, "preco", charts.grafico_preco, historico, cg["brl_24h_change"], legenda=message)
     except Exception as e:
@@ -710,6 +744,50 @@ async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
+def emissao_diaria(recompensa: float) -> float:
+    return recompensa * 10 * 86400  # 10 blocos por segundo
+
+
+def rendimento_por_th(recompensa: float, hashrate_rede_th: float) -> float:
+    """KAS por dia que 1 TH/s rende, na média (sem taxa de pool)."""
+    return emissao_diaria(recompensa) / hashrate_rede_th
+
+
+def tempo_restante(ate: datetime) -> str:
+    restante = ate - datetime.now(tz=BRASILIA)
+    return f"{restante.days}d {restante.seconds // 3600}h {restante.seconds % 3600 // 60}min"
+
+
+def br_pct(numero: float) -> str:
+    # Percentual com casas suficientes para números pequenos: 21,4% / 0,39% / 0,0013%
+    if numero >= 1:
+        return f"{br(numero, 1)}%"
+    casas = 2
+    while casas < 8 and round(numero, casas) == 0:
+        casas += 1
+    return f"{br(numero, casas + 1 if numero < 0.01 else casas)}%"
+
+
+def ler_numero(texto: str) -> float:
+    """Lê números como 5000, 5.000, 1,5, 1.234,56, 10k, 2mil, 1,5mi."""
+    t = texto.strip().lower().replace(" ", "")
+    multiplicador = 1
+    for sufixo, valor in (("bi", 1e9), ("mil", 1e3), ("mi", 1e6), ("k", 1e3), ("m", 1e6)):
+        if t.endswith(sufixo):
+            t, multiplicador = t[: -len(sufixo)], valor
+            break
+    if "," in t and "." in t:
+        t = t.replace(".", "").replace(",", ".")
+    elif "," in t:
+        t = t.replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", t):
+        t = t.replace(".", "")  # 5.000 = cinco mil
+    numero = float(t) * multiplicador
+    if not 0 < numero < float("inf"):
+        raise ValueError("número inválido")
+    return numero
+
+
 async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_message or not pode_pedir(update, "halving"):
         return
@@ -717,20 +795,21 @@ async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             dados = await get_json(client, f"{KASPA_API}/info/halving")
             recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
+            circulante, maximo = await supply_kas(client)
         except Exception as e:
             print(f"Erro /halving: {e}")
             await update.effective_message.reply_text(ERRO_API)
             return
 
     proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
-    restante = proximo - datetime.now(tz=BRASILIA)
-    dias, segundos = restante.days, restante.seconds
+    depois = dados["nextHalvingAmount"]
     message = (
         "⏳ *Próximo Halving da Kaspa*\n\n"
         f"📅 {proximo:%d/%m/%Y às %H:%M} (Brasília)\n"
-        f"⌛ Faltam {dias}d {segundos // 3600}h {segundos % 3600 // 60}min\n\n"
-        f"🪙 Recompensa atual: {br(recompensa, 4)} KAS/bloco\n"
-        f"🪙 Após o halving: {br(dados['nextHalvingAmount'], 4)} KAS/bloco\n\n"
+        f"⌛ Faltam {tempo_restante(proximo)}\n\n"
+        f"🪙 Recompensa: {br(recompensa, 4)} → {br(depois, 4)} KAS/bloco\n"
+        f"🏭 Emissão diária: {br(emissao_diaria(recompensa), 0)} → {br(emissao_diaria(depois), 0)} KAS\n"
+        f"📦 Já minerado: {br(circulante / maximo * 100)}% do supply máximo\n\n"
         "ℹ️ A Kaspa usa o _halving cromático_: a recompensa cai todo mês "
         "(fator de (1/2)^(1/12)), reduzindo pela metade a cada ano."
     )
@@ -744,7 +823,7 @@ async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_message or not pode_pedir(update, "mineracao"):
         return
-    message = """
+    links = """
 ⛏️ **Mineração:**
 
 • https://mineable.money/
@@ -757,12 +836,299 @@ async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
             dados = await get_json(client, f"{KASPA_API}/info/halving")
             historico = await historico_hashrate(client)
+            cg = await cotacao(client)
+        por_th = rendimento_por_th(recompensa, atual)
+        message = (
+            f"{links}\n💡 Hoje, 1 TH/s rende ~{br(por_th)} KAS{valor_em_reais(por_th, cg)} por dia.\n"
+            "Calcule o da sua máquina: /calc 21 (TH/s)"
+        )
         proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
         await enviar_grafico(update, "mineracao", charts.grafico_mineracao, historico, atual, recompensa,
                              proximo, legenda=message)
     except Exception as e:
         # Sem dados ou sem gráfico: manda pelo menos os links
         print(f"Erro gráfico /mineracao: {e}")
+        await update.effective_message.reply_text(links, parse_mode="Markdown")
+
+
+async def supply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message or not pode_pedir(update, "supply"):
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            circulante, maximo = await supply_kas(client)
+            recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
+            dados = await get_json(client, f"{KASPA_API}/info/halving")
+            preco_usd = (await get_json(client, f"{KASPA_API}/info/price"))["price"]
+        except Exception as e:
+            print(f"Erro /supply: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+        cg = await cotacao(client)
+
+    proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
+    projecao = charts.projecao_supply(circulante, maximo, recompensa, proximo, 120)
+    emitido_12m = next(s for d, s in projecao if d >= datetime.now(tz=BRASILIA) + timedelta(days=365)) - circulante
+    marco_99 = next((d for d, s in projecao if s / maximo >= 0.99), None)
+    message = (
+        "📦 *Supply de Kaspa*\n\n"
+        f"✅ Minerado: {br(circulante / 1e9, 3)} bi KAS ({br(circulante / maximo * 100)}%)\n"
+        f"🔒 Supply máximo: {br(maximo / 1e9, 3)} bi KAS\n"
+        f"⏳ Faltam: {br((maximo - circulante) / 1e6, 0)} mi KAS\n\n"
+        f"🏭 Emissão hoje: {br(emissao_diaria(recompensa), 0)} KAS/dia\n"
+        f"📉 Inflação nos próximos 12 meses: ~{br(emitido_12m / circulante * 100)}% (e caindo todo mês)\n"
+        + (f"🎯 99% minerado em ~{charts._mes_ano(marco_99)}\n" if marco_99 else "")
+        + f"\n🧮 Totalmente diluído: US$ {br(maximo * preco_usd, 0)}"
+        + (f"\n🧮 Totalmente diluído: R$ {br(maximo * cg['brl'], 0)}" if cg else "")
+    )
+    try:
+        await enviar_grafico(update, "supply", charts.grafico_supply, circulante, maximo, recompensa, proximo,
+                             legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /supply: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+UNIDADES_HASHRATE = {"mh": 1e-6, "gh": 1e-3, "th": 1, "ph": 1e3, "eh": 1e6}
+USO_CALC = (
+    "Uso: `/calc 21` (seu hashrate em TH/s)\n"
+    "Com energia: `/calc 21 3200 0,80` (watts e R$ por kWh)\n"
+    "Outras unidades: `/calc 500gh`, `/calc 1,2ph`"
+)
+
+
+def ler_calc(args: list):
+    """Lê '/calc 21', '/calc 21 TH 3200 0,80', '/calc 500gh'... -> (TH/s, watts, R$/kWh)."""
+    tokens = [a.lower().replace("/s", "") for a in args]
+    if not tokens:
+        raise ValueError("sem hashrate")
+    match = re.fullmatch(r"([\d.,]+)(mh|gh|th|ph|eh)?", tokens.pop(0))
+    if not match:
+        raise ValueError("hashrate inválido")
+    unidade = match.group(2)
+    if not unidade and tokens and tokens[0] in UNIDADES_HASHRATE:
+        unidade = tokens.pop(0)
+    th = ler_numero(match.group(1)) * UNIDADES_HASHRATE[unidade or "th"]
+    watts = ler_numero(tokens[0].rstrip("w")) if len(tokens) >= 1 else None
+    kwh = ler_numero(tokens[1].replace("r$", "")) if len(tokens) >= 2 else None
+    return th, watts, kwh
+
+
+async def calc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message or not pode_pedir(update, "calc", timedelta(seconds=3)):
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            rede_th = (await get_json(client, f"{KASPA_API}/info/hashrate"))["hashrate"]
+            recompensa = (await get_json(client, f"{KASPA_API}/info/blockreward"))["blockreward"]
+            dados = await get_json(client, f"{KASPA_API}/info/halving")
+        except Exception as e:
+            print(f"Erro /calc: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+        cg = await cotacao(client)
+
+    por_th = rendimento_por_th(recompensa, rede_th)
+    try:
+        th, watts, kwh = ler_calc(context.args or [])
+    except ValueError:
+        await update.effective_message.reply_text(
+            "⛏️ *Calculadora de Mineração*\n\n"
+            f"{USO_CALC}\n\n"
+            f"💡 Hoje, 1 TH/s rende ~{br(por_th)} KAS{valor_em_reais(por_th, cg)} por dia.",
+            parse_mode="Markdown",
+        )
+        return
+
+    # 30 dias considerando a redução mensal da recompensa
+    proximo = datetime.fromtimestamp(dados["nextHalvingTimestamp"], tz=BRASILIA)
+    agora = datetime.now(tz=BRASILIA)
+    kas_mes = 0.0
+    for dia in range(30):
+        momento = agora + timedelta(days=dia)
+        reducoes = 0 if momento < proximo else 1 + int((momento - proximo) / charts.MES_KASPA)
+        kas_mes += rendimento_por_th(recompensa * 2 ** (-reducoes / 12), rede_th) * th
+    kas_dia = por_th * th
+
+    linhas = [
+        "⛏️ *Calculadora de Mineração*\n",
+        f"⚡ Seu hashrate: {formatar_hashrate(th)} ({br_pct(th / rede_th * 100)} da rede)",
+        f"📅 Por dia: {br(kas_dia)} KAS{valor_em_reais(kas_dia, cg)}",
+        f"🗓️ Em 30 dias: {br(kas_mes, 0)} KAS{valor_em_reais(kas_mes, cg)}",
+    ]
+    if watts and kwh and cg:
+        energia_dia = watts * 24 / 1000
+        custo_dia = energia_dia * kwh
+        lucro_dia = kas_dia * cg["brl"] - custo_dia
+        linhas += [
+            "",
+            f"🔌 Energia: {br(energia_dia)} kWh/dia × R$ {br(kwh)} = R$ {br(custo_dia)}/dia",
+            f"{'✅' if lucro_dia >= 0 else '❌'} Lucro: R$ {br(lucro_dia)}/dia · R$ {br(lucro_dia * 30)}/mês",
+        ]
+    elif watts:
+        linhas += ["", "🔌 Para calcular o lucro, informe também o preço do kWh: `/calc 21 3200 0,80`"]
+    linhas += [
+        "",
+        "ℹ️ Estimativa: não considera taxa da pool nem mudanças no hashrate da rede e no preço.",
+    ]
+    await update.effective_message.reply_text("\n".join(linhas), parse_mode="Markdown")
+
+
+async def sou(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message or not pode_pedir(update, "sou", timedelta(seconds=3)):
+        return
+    try:
+        quantidade = ler_numero("".join(context.args or []))
+    except ValueError:
+        await update.effective_message.reply_text(
+            "🐋 *Em qual faixa de holders você está?*\n\n"
+            "Uso: `/sou 5000` (quantidade de KAS)\n"
+            "Também aceita: `/sou 1,5mi`, `/sou 250k`",
+            parse_mode="Markdown",
+        )
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            # Endpoint experimental da API: foto diária da quantidade de endereços por faixa de saldo
+            faixas = (await get_json(client, f"{KASPA_API}/addresses/distribution", cache=3600, limit=1))[0]["tiers"]
+            circulante, _ = await supply_kas(client)
+        except Exception as e:
+            print(f"Erro /sou: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+        cg = await cotacao(client)
+
+    # Faixa 0: menos de 1 KAS; faixa k: de 10^(k-1) até 10^k KAS
+    total = sum(f["count"] for f in faixas)
+    faixa = 0 if quantidade < 1 else int(math.log10(quantidade)) + 1
+    acima = sum(f["count"] for f in faixas if f["tier"] > faixa)
+    na_faixa = next((f["count"] for f in faixas if f["tier"] == faixa), 0)
+    # Dentro da faixa, estima a posição em escala logarítmica
+    fracao = quantidade if faixa == 0 else math.log10(quantidade) - (faixa - 1)
+    mais_que_voce = acima + na_faixa * (1 - min(fracao, 1))
+    topo = max(mais_que_voce / total * 100, 0.0001)
+    enderecos = f"{br(mais_que_voce / 1000, 0)} mil" if mais_que_voce >= 10000 else br(mais_que_voce, 0)
+
+    message = (
+        "🐋 *Onde você está entre os holders de KAS*\n\n"
+        f"Com *{br(quantidade, 0 if quantidade >= 100 else 2)} KAS*{valor_em_reais(quantidade, cg)}:\n\n"
+        f"🏅 Você estaria no *top {br_pct(topo)}* dos {br(total / 1000, 0)} mil endereços com saldo\n"
+        f"👥 ~{enderecos} endereços têm mais KAS que isso\n"
+        f"📊 Isso é {br_pct(quantidade / circulante * 100)} do supply circulante\n\n"
+        "ℹ️ Aproximação: corretoras guardam o saldo de muitos usuários em um único endereço, "
+        "e uma pessoa pode ter vários endereços."
+    )
+    await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+CORRETORAS = re.compile(
+    r"binance|bybit|kucoin|mexc|gate|bitget|kraken|coinex|\bxt\b|uphold|pionex|biconomy|okx|htx|"
+    r"bitmart|lbank|bingx|bitvavo|bitrue|phemex|poloniex|digifinex|tapbit|weex|bitpanda|coinone",
+    re.IGNORECASE,
+)
+_maiores = {"quando": None, "dados": None}
+
+
+async def maiores_enderecos(client: httpx.AsyncClient) -> list:
+    """Os 1.000 maiores endereços [(endereço, KAS)]. A resposta completa tem 1 MB, então
+    guarda só o necessário, por 1 hora (a API atualiza essa lista uma vez por dia)."""
+    agora = datetime.now(tz=timezone.utc)
+    if not _maiores["dados"] or agora - _maiores["quando"] > timedelta(hours=1):
+        ranking = (await get_json(client, f"{KASPA_API}/addresses/top", cache=0))[0]["ranking"]
+        ranking.sort(key=lambda r: r["rank"])
+        _maiores["dados"] = [(r["address"], r["amount"]) for r in ranking[:1000]]
+        _maiores["quando"] = agora
+    return _maiores["dados"]
+
+
+def sem_markdown(texto: str) -> str:
+    # Nomes vêm da API: tira caracteres que quebram o Markdown do Telegram
+    return re.sub(r"[_*`\[\]]", " ", texto)
+
+
+def nome_endereco(endereco: str, nomes: dict) -> str:
+    return nomes.get(endereco) or f"{endereco[:12]}…{endereco[-5:]}"
+
+
+async def baleias(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message or not pode_pedir(update, "baleias"):
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            maiores = await maiores_enderecos(client)
+            nomes = {n["address"]: n["name"]
+                     for n in await get_json(client, f"{KASPA_API}/addresses/names", cache=3600)}
+            circulante, _ = await supply_kas(client)
+        except Exception as e:
+            print(f"Erro /baleias: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+
+    def fatia(n):
+        return sum(qtd for _, qtd in maiores[:n]) / circulante * 100
+
+    corretoras = sum(qtd for end, qtd in maiores if CORRETORAS.search(nomes.get(end, ""))) / circulante * 100
+    top10 = [(f"{i}. {nome_endereco(end, nomes)}", qtd) for i, (end, qtd) in enumerate(maiores[:10], 1)]
+    lista = "\n".join(
+        f"{sem_markdown(nome)} — {br(qtd / 1e6, 0)} mi ({br(qtd / circulante * 100)}%)" for nome, qtd in top10
+    )
+    message = (
+        "🐋 *Maiores endereços de Kaspa*\n\n"
+        f"{lista}\n\n"
+        f"📊 Top 10: {br(fatia(10), 1)}% · Top 100: {br(fatia(100), 1)}% · "
+        f"Top 1000: {br(fatia(1000), 1)}% do supply\n"
+        f"🏦 Corretoras identificadas: pelo menos {br(corretoras, 1)}%\n\n"
+        "ℹ️ Nomes identificados pela api.kaspa.org. Endereço de corretora guarda o saldo de muitos usuários."
+    )
+    try:
+        await enviar_grafico(update, "baleias", charts.grafico_baleias, top10, circulante, legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /baleias: {e}")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
+
+
+async def rede(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_message or not pode_pedir(update, "rede"):
+        return
+    hoje = datetime.now(tz=timezone.utc).date()
+    dias_desejados = [hoje - timedelta(days=d) for d in range(30, 0, -1)]  # 30 dias completos
+    meses = sorted({f"{d:%Y-%m}" for d in dias_desejados} | {f"{hoje:%Y-%m}"})
+    async with httpx.AsyncClient() as client:
+        try:
+            horas = []
+            for mes in meses:
+                horas += await get_json(client, f"{KASPA_API}/transactions/count/{mes}", cache=600)
+            no = await get_json(client, f"{KASPA_API}/info/kaspad")
+            taxa = await get_json(client, f"{KASPA_API}/info/fee-estimate")
+        except Exception as e:
+            print(f"Erro /rede: {e}")
+            await update.effective_message.reply_text(ERRO_API)
+            return
+
+    horas = sorted(horas, key=lambda h: h["timestamp"])
+    por_dia = {}
+    for h in horas:
+        dia = datetime.fromtimestamp(h["timestamp"] / 1000, tz=timezone.utc).date()
+        por_dia[dia] = por_dia.get(dia, 0) + h["regular"]  # sem as transações de recompensa (coinbase)
+    dias = [(datetime(d.year, d.month, d.day, tzinfo=timezone.utc), por_dia[d]) for d in dias_desejados if d in por_dia]
+    ultimas_24h = sum(h["regular"] for h in horas[-24:])
+    media = sum(v for _, v in dias) / len(dias)
+    segundos = taxa["priorityBucket"]["estimatedSeconds"]
+    confirmacao = "menos de 1 segundo" if segundos < 1 else f"~{br(segundos, 0)} segundos"
+
+    message = (
+        "🌐 *Rede Kaspa agora*\n\n"
+        f"🔁 Transações nas últimas 24h: {br(ultimas_24h, 0)}\n"
+        f"📊 Média de 30 dias: {br(media, 0)}/dia (~{br(media / 86400)} por segundo)\n"
+        f"⏱️ Confirmação estimada: {confirmacao}\n"
+        f"📥 Transações na fila (mempool): {br(int(no['mempoolSize']), 0)}\n"
+        f"{'✅' if no['isSynced'] else '⚠️'} Nó da API {'sincronizado' if no['isSynced'] else 'sincronizando'} "
+        f"(versão {no['serverVersion']})"
+    )
+    try:
+        await enviar_grafico(update, "rede", charts.grafico_rede, dias, ultimas_24h, legenda=message)
+    except Exception as e:
+        print(f"Erro gráfico /rede: {e}")
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
@@ -779,6 +1145,11 @@ MENU_COMANDOS = [
     ("hashrate", "Hashrate da rede"),
     ("halving", "Próxima redução da recompensa"),
     ("kasbtc", "Par KAS/BTC com gráfico (30d a 5 anos)"),
+    ("supply", "Quanto já foi minerado e emissão"),
+    ("rede", "Transações e status da rede"),
+    ("baleias", "Maiores endereços e concentração"),
+    ("calc", "Calculadora de mineração (ex: /calc 21)"),
+    ("sou", "Em qual faixa de holders você está (ex: /sou 5000)"),
     ("regras", "Regras do Grupo"),
     ("info", "Informações gerais sobre Kaspa"),
     ("analises", "Ferramentas de Análise"),
@@ -831,6 +1202,11 @@ def main():
     app.add_handler(CommandHandler("hashrate", hashrate))
     app.add_handler(CommandHandler("halving", halving))
     app.add_handler(CommandHandler("kasbtc", kasbtc))
+    app.add_handler(CommandHandler("supply", supply))
+    app.add_handler(CommandHandler("rede", rede))
+    app.add_handler(CommandHandler("baleias", baleias))
+    app.add_handler(CommandHandler("calc", calc))
+    app.add_handler(CommandHandler("sou", sou))
     app.add_handler(CallbackQueryHandler(kasbtc_botao, pattern=r"^kasbtc:"))
     app.add_handler(CommandHandler("p2p", p2p))
     app.add_handler(CommandHandler("exchangesg", exchangesG))
