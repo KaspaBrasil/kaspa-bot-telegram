@@ -406,7 +406,7 @@ DOACOES = """
 💰 **Doações para nossos projetos:**
 
 🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
-`kaspa:qq0m5ajsm0km00u4ue2ncus6hpjhreccpureqale53n5h3pksgsgjd4r6vjys`
+`kaspa:qpsa3ctm4lk2usrl82fh8dyjvkyyq2uck9ly2pcgmv432yfs50ypjgn4v6c9f`
 
 🌐 **Site Kaspa Br:**
 `kaspa:qzc3ju7tl3eaydlc6w0me9evfcv49hy9tmf83h66usey88t8l84v72z35lal4`
