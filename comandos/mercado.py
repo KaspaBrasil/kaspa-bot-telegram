@@ -64,8 +64,9 @@ PERIODOS_KASBTC = {
 }
 
 
-async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> list:
-    """Retorna [[timestamp_ms, preço em BTC], ...] do período escolhido."""
+async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> tuple[list, float, float]:
+    """Retorna ([[timestamp_ms, preço em BTC], ...], KAS em US$ no início, BTC em US$ no início)
+    do período escolhido."""
     _, _, intervalo, quantidade = PERIODOS_KASBTC[chave]
     kas, btc = await asyncio.gather(*(
         get_json(client, f"{MEXC_API}/klines", cache=300, symbol=par, interval=intervalo, limit=quantidade)
@@ -73,11 +74,29 @@ async def historico_kasbtc(client: httpx.AsyncClient, chave: str) -> list:
     ))
     # Candle: [abertura_ms, open, high, low, close, ...]; casa os dois pares pelo dia de abertura
     btc_por_dia = {c[0] // 86_400_000: float(c[4]) for c in btc}
-    return [
-        [c[0], float(c[4]) / btc_por_dia[c[0] // 86_400_000]]
-        for c in kas
-        if c[0] // 86_400_000 in btc_por_dia
-    ]
+    kas = [c for c in kas if c[0] // 86_400_000 in btc_por_dia]
+    historico = [[c[0], float(c[4]) / btc_por_dia[c[0] // 86_400_000]] for c in kas]
+    return historico, float(kas[0][4]), btc_por_dia[kas[0][0] // 86_400_000]
+
+
+def comparativo_kas_btc(periodo: str, kas_inicio: float, kas_agora: float,
+                        btc_inicio: float, btc_agora: float) -> str:
+    """Quanto KAS e BTC renderam em dólar no período e qual das duas compras rendeu mais."""
+    def pct(numero: float) -> str:
+        return f"{'+' if numero >= 0 else ''}{br(numero, 1)}%"
+
+    kas = (kas_agora / kas_inicio - 1) * 100
+    btc = (btc_agora / btc_inicio - 1) * 100
+    # Diferença entre as duas compras = variação do par KAS/BTC no período (a mesma do gráfico)
+    par = ((1 + kas / 100) / (1 + btc / 100) - 1) * 100
+    vencedor = "KAS" if par >= 0 else "BTC"
+    return (
+        f"📊 {periodo} (em dólar):\n"
+        f"• KAS: {pct(kas)}\n"
+        f"• BTC: {pct(btc)}\n"
+        f"🏆 Comprar {vencedor} rendeu mais: o KAS {'subiu' if par >= 0 else 'caiu'} "
+        f"{br(abs(par), 1)}% em relação ao BTC."
+    )
 
 
 def teclado_kasbtc(selecionado: str) -> InlineKeyboardMarkup:
@@ -91,12 +110,13 @@ def teclado_kasbtc(selecionado: str) -> InlineKeyboardMarkup:
 async def dados_kasbtc(chave: str):
     """Busca os dados e devolve (foto, legenda, veio_do_cache) do par KAS/BTC no período escolhido."""
     async with httpx.AsyncClient() as client:
-        historico, kas_24h, btc_24h = await asyncio.gather(
+        (historico, kas_inicio, btc_inicio), kas_24h, btc_24h = await asyncio.gather(
             historico_kasbtc(client, chave),
             get_json(client, f"{MEXC_API}/ticker/24hr", symbol="KASUSDT"),
             get_json(client, f"{MEXC_API}/ticker/24hr", symbol="BTCUSDT"),
         )
-    preco_btc = float(kas_24h["lastPrice"]) / float(btc_24h["lastPrice"])
+    kas_agora, btc_agora = float(kas_24h["lastPrice"]), float(btc_24h["lastPrice"])
+    preco_btc = kas_agora / btc_agora
     # Variação do par = variação do KAS em relação à variação do BTC (ambos em USDT)
     variacao = ((1 + float(kas_24h["priceChangePercent"])) / (1 + float(btc_24h["priceChangePercent"])) - 1) * 100
     historico = historico + [[int(datetime.now(tz=timezone.utc).timestamp() * 1000), preco_btc]]
@@ -105,11 +125,17 @@ async def dados_kasbtc(chave: str):
     inicio = datetime.fromtimestamp(historico[0][0] / 1000, tz=BRASILIA)
     if chave == "5a":
         periodo = f"desde {inicio:%m/%Y}"  # o KAS só é negociado na MEXC desde set/2022
+        titulo_comparativo = f"Desde {inicio:%m/%Y}"
+    elif chave == "1a":
+        titulo_comparativo = "Último ano"
+    else:
+        titulo_comparativo = f"Últimos {periodo}"
 
     legenda = (
         "₿ *Par KAS/BTC*\n\n"
         f"1 KAS = {br(preco_btc * 1e8)} sats ({br(preco_btc, 8)} BTC)\n"
         f"{'📈' if variacao >= 0 else '📉'} 24h: {'+' if variacao >= 0 else ''}{br(variacao)}%\n\n"
+        f"{comparativo_kas_btc(titulo_comparativo, kas_inicio, kas_agora, btc_inicio, btc_agora)}\n\n"
         "ℹ️ 1 sat (satoshi) = 0,00000001 BTC · dados: MEXC"
     )
     foto, legenda_cache = await grafico_em_cache(

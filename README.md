@@ -27,6 +27,7 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 /preco         - Preço atual do KAS (USD/BRL/sats)
 /kasbtc        - Par KAS/BTC em satoshis, com gráfico e botões de período
                  (30d, 90d, 180d, 1 ano, 5 anos) — também aceita /kasbtc 90d, /kasbtc 1a...
+                 Mostra quanto KAS e BTC renderam em dólar no período e qual compra rendeu mais
 /hashrate      - Hashrate atual e recorde da rede
 /halving       - Próxima redução da recompensa e emissão diária
 /supply        - Quanto já foi minerado, inflação e projeção
