@@ -448,6 +448,9 @@ async def doacoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
 `kaspa:qq0m5ajsm0km00u4ue2ncus6hpjhreccpureqale53n5h3pksgsgjd4r6vjys`
+
+🌐 **Site Kaspa Br:**
+`kaspa:qzc3ju7tl3eaydlc6w0me9evfcv49hy9tmf83h66usey88t8l84v72z35lal4`
 """
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
