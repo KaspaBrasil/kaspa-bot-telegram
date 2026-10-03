@@ -347,18 +347,18 @@ def grafico_rede(dias: list, ultimas_24h: int) -> io.BytesIO:
     datas = [d for d, _ in dias]
     valores = [v for _, v in dias]
     media = sum(valores) / len(valores)
+    tipico = sorted(valores)[len(valores) // 2]  # mediana: não é distorcida pelos dias de pico
 
     fig, ax = _figura(
         "Transações por dia na rede Kaspa · últimos 30 dias",
-        f"média {br(media, 0)}/dia   ·   pico {br(max(valores), 0)}   ·   "
-        f"~{br(media / 86400)} transações por segundo",
+        f"dia típico {br(tipico, 0)}   ·   média {br(media, 0)}   ·   pico {br(max(valores), 0)}",
         f"{br(ultimas_24h, 0)} nas últimas 24h",
-        (ultimas_24h / media - 1) * 100,
-        "24h vs. média de 30 dias",
+        (ultimas_24h / tipico - 1) * 100,
+        "24h vs. dia típico do mês",
         fonte="api.kaspa.org",
     )
     ax.bar(datas, valores, color=DESTAQUE, width=0.7)
     ax.set_xlim(datas[0] - timedelta(days=0.6), datas[-1] + timedelta(days=0.6))
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{br(y / 1000, 0)} mil"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{br(y / 1000, 0)} mil" if y else "0"))
     _eixo_x_datas(ax)
     return _png(fig)

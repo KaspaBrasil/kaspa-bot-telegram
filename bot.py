@@ -1006,14 +1006,20 @@ async def sou(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Dentro da faixa, estima a posição em escala logarítmica
     fracao = quantidade if faixa == 0 else math.log10(quantidade) - (faixa - 1)
     mais_que_voce = acima + na_faixa * (1 - min(fracao, 1))
-    topo = max(mais_que_voce / total * 100, 0.0001)
-    enderecos = f"{br(mais_que_voce / 1000, 0)} mil" if mais_que_voce >= 10000 else br(mais_que_voce, 0)
+    if mais_que_voce < 1.5:
+        posicao = "🏅 Você estaria entre os *maiores endereços* da rede\n"
+    else:
+        enderecos = f"{br(mais_que_voce / 1000, 0)} mil" if mais_que_voce >= 10000 else br(mais_que_voce, 0)
+        posicao = (
+            f"🏅 Você estaria no *top {br_pct(mais_que_voce / total * 100)}* dos "
+            f"{br(total / 1000, 0)} mil endereços com saldo\n"
+            f"👥 ~{enderecos} endereços têm mais KAS que isso\n"
+        )
 
     message = (
         "🐋 *Onde você está entre os holders de KAS*\n\n"
         f"Com *{br(quantidade, 0 if quantidade >= 100 else 2)} KAS*{valor_em_reais(quantidade, cg)}:\n\n"
-        f"🏅 Você estaria no *top {br_pct(topo)}* dos {br(total / 1000, 0)} mil endereços com saldo\n"
-        f"👥 ~{enderecos} endereços têm mais KAS que isso\n"
+        f"{posicao}"
         f"📊 Isso é {br_pct(quantidade / circulante * 100)} do supply circulante\n\n"
         "ℹ️ Aproximação: corretoras guardam o saldo de muitos usuários em um único endereço, "
         "e uma pessoa pode ter vários endereços."
@@ -1113,13 +1119,14 @@ async def rede(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     dias = [(datetime(d.year, d.month, d.day, tzinfo=timezone.utc), por_dia[d]) for d in dias_desejados if d in por_dia]
     ultimas_24h = sum(h["regular"] for h in horas[-24:])
     media = sum(v for _, v in dias) / len(dias)
+    tipico = sorted(v for _, v in dias)[len(dias) // 2]  # mediana: não é distorcida pelos dias de pico
     segundos = taxa["priorityBucket"]["estimatedSeconds"]
     confirmacao = "menos de 1 segundo" if segundos < 1 else f"~{br(segundos, 0)} segundos"
 
     message = (
         "🌐 *Rede Kaspa agora*\n\n"
         f"🔁 Transações nas últimas 24h: {br(ultimas_24h, 0)}\n"
-        f"📊 Média de 30 dias: {br(media, 0)}/dia (~{br(media / 86400)} por segundo)\n"
+        f"📊 Dia típico do mês: {br(tipico, 0)} · média: {br(media, 0)} (~{br(media / 86400)} por segundo)\n"
         f"⏱️ Confirmação estimada: {confirmacao}\n"
         f"📥 Transações na fila (mempool): {br(int(no['mempoolSize']), 0)}\n"
         f"{'✅' if no['isSynced'] else '⚠️'} Nó da API {'sincronizado' if no['isSynced'] else 'sincronizando'} "
