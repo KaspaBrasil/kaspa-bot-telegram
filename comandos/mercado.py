@@ -1,4 +1,4 @@
-"""/preco e /kasbtc (com botões de período)."""
+"""/preco, /kasbtc (com botões de período) e /ath."""
 import asyncio
 from datetime import datetime, timedelta, timezone
 
@@ -8,10 +8,10 @@ from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 import charts
-from api import COINGECKO_API, KASPA_API, MEXC_API, cotacao, get_json, supply_kas
+from api import COINGECKO_API, KASPA_API, MEXC_API, cotacao, get_json, opcional, supply_kas
 from envio import enviar_so_texto, falha_api, grafico_em_cache, guardar_grafico, pode_pedir, pode_responder, \
     responder_com_grafico
-from formatacao import BRASILIA, br
+from formatacao import BRASILIA, br, br_minimo, mes_ano
 
 
 async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -192,3 +192,157 @@ async def kasbtc_botao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             print(f"Erro botão /kasbtc: {e}")
     except Exception as e:
         print(f"Erro botão /kasbtc: {e}")
+
+
+# 🏔️ ATH e o ciclo atual: máxima histórica (CoinGecko) e, com os candles da MEXC, o fundo
+# desde o topo, a média de 200 semanas e a faixa das últimas 52 semanas
+
+def _usd(valor: float) -> str:
+    return f"US$ {br_minimo(valor, 6 if valor >= 0.001 else 8)}"
+
+
+def _dias(desde: datetime) -> str:
+    dias = (datetime.now(tz=timezone.utc) - desde).days
+    if dias < 1:
+        return "hoje"
+    anos, resto = divmod(dias, 365)
+    meses = resto // 30
+    duracao = " e ".join(
+        f"{n} {singular if n == 1 else plural}"
+        for n, singular, plural in ((anos, "ano", "anos"), (meses, "mês", "meses")) if n
+    )
+    return f"há {br(dias, 0)} dia{'s' if dias > 1 else ''}" + (f" (~{duracao})" if anos else "")
+
+
+def _vezes(numero: float) -> str:
+    return f"{br(numero, 1 if numero < 100 else 0)}x"
+
+
+def _pct(numero: float, casas: int = 1) -> str:
+    return f"{'+' if numero >= 0 else ''}{br(numero, casas)}%"
+
+
+def _data_candle(candle) -> datetime:
+    # Candle: [abertura_ms, open, high, low, close, ...]; os candles diários/semanais abrem às 00:00 UTC
+    return datetime.fromtimestamp(candle[0] / 1000, tz=timezone.utc)
+
+
+def fundo_do_ciclo(semanas: list, dias: list, data_ath: datetime):
+    """(menor preço desde o ATH, data). Os candles diários vêm primeiro: no empate, a data
+    exata do dia ganha da data de abertura da semana."""
+    depois = [c for c in dias + semanas if _data_candle(c) > data_ath]
+    if not depois:
+        return None
+    fundo = min(depois, key=lambda c: float(c[3]))
+    return float(fundo[3]), _data_candle(fundo)
+
+
+def media_200_semanas(semanas: list):
+    """Média dos fechamentos das últimas 200 semanas: o "piso" clássico dos bear markets."""
+    if len(semanas) < 200:
+        return None
+    return sum(float(c[4]) for c in semanas[-200:]) / 200
+
+
+def contexto_ath(semanas: list, dias: list, atual: float, ath: float, data_ath: datetime) -> str:
+    """Blocos que dependem dos candles da MEXC: fundo do ciclo, média de 200 semanas,
+    últimas 52 semanas e quanto de quem comprou desde 2022 está no lucro."""
+    linhas = []
+    ciclo = fundo_do_ciclo(semanas, dias, data_ath)
+    if ciclo:
+        fundo, data_fundo = ciclo
+        linhas += [
+            "📉 *Fundo do ciclo (menor preço desde o ATH)*",
+            f"{_usd(fundo)} · {data_fundo:%d/%m/%Y} · {_dias(data_fundo)}",
+            f"🔻 {_pct((fundo / ath - 1) * 100)} em relação ao topo",
+            f"🟢 {_pct((atual / fundo - 1) * 100)} desde o fundo",
+            "",
+        ]
+    media = media_200_semanas(semanas)
+    if media:
+        diferenca = (atual / media - 1) * 100
+        linhas += [
+            f"📏 Média de 200 semanas: {_usd(media)} · preço "
+            f"{br(abs(diferenca), 1)}% {'acima' if diferenca >= 0 else 'abaixo'}",
+            "",
+        ]
+
+    maxima = max(dias, key=lambda c: float(c[2]))
+    minima = min(dias, key=lambda c: float(c[3]))
+    alta, baixa = float(maxima[2]), float(minima[3])
+    posicao = (atual - baixa) / (alta - baixa) * 100 if alta > baixa else 100
+    linhas += [
+        "📆 *Últimas 52 semanas*",
+        f"Máxima: {_usd(alta)} em {_data_candle(maxima):%d/%m/%Y} ({_pct((atual / alta - 1) * 100)})",
+        # Num bear market a mínima do ano costuma ser o próprio fundo do ciclo: não repete o número
+        "Mínima: o próprio fundo do ciclo" if ciclo and baixa == ciclo[0] else
+        f"Mínima: {_usd(baixa)} em {_data_candle(minima):%d/%m/%Y} ({_pct((atual / baixa - 1) * 100)})",
+        f"Posição na faixa: {br(min(max(posicao, 0), 100), 0)}% (0% = mínima, 100% = máxima)",
+        "",
+    ]
+
+    # Comprou no fechamento de uma semana mais barata que hoje = está no lucro
+    fechamentos = [float(c[4]) for c in semanas[:-1]]  # sem a semana em andamento
+    no_lucro = sum(f < atual for f in fechamentos) / len(fechamentos) * 100
+    linhas.append(
+        f"💼 Quem comprou numa semana qualquer desde {mes_ano(_data_candle(semanas[0]))} "
+        f"estaria no lucro hoje em {br(no_lucro, 0)}% dos casos"
+    )
+    return "\n".join(linhas)
+
+
+async def ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not pode_responder(update, "ath"):
+        return
+    async with httpx.AsyncClient() as client:
+        try:
+            dados = (await get_json(
+                client, f"{COINGECKO_API}/coins/kaspa", cache=300, localization="false", tickers="false",
+                community_data="false", developer_data="false", sparkline="false",
+            ))["market_data"]
+        except Exception as e:
+            await falha_api(update, "ath", e)
+            return
+        # Histórico da MEXC (opcional: sem ele, vai só o texto com os dados da CoinGecko)
+        semanas, dias = await asyncio.gather(
+            opcional(get_json(client, f"{MEXC_API}/klines", cache=600,
+                              symbol="KASUSDT", interval="1W", limit=1000), "semanal /ath"),
+            opcional(get_json(client, f"{MEXC_API}/klines", cache=600,
+                              symbol="KASUSDT", interval="1d", limit=365), "diário /ath"),
+        )
+
+    atual = dados["current_price"]["usd"]
+    topo, atl = dados["ath"]["usd"], dados["atl"]["usd"]
+    data_topo = datetime.fromisoformat(dados["ath_date"]["usd"].replace("Z", "+00:00"))
+    data_atl = datetime.fromisoformat(dados["atl_date"]["usd"].replace("Z", "+00:00"))
+    circulante = dados.get("circulating_supply")
+
+    mensagem = (
+        "🏔️ *KAS · Máxima histórica e ciclo atual*\n\n"
+        f"💲 Agora: {_usd(atual)}"
+        + (f" · R$ {br(dados['current_price']['brl'], 4)}" if dados["current_price"].get("brl") else "")
+        + "\n\n"
+        "📈 *ATH (máxima histórica)*\n"
+        f"{_usd(topo)}" + (f" · R$ {br(dados['ath']['brl'])}" if dados["ath"].get("brl") else "") + "\n"
+        f"📅 {data_topo.astimezone(BRASILIA):%d/%m/%Y} · {_dias(data_topo)}\n"
+        f"🔴 {_pct((atual / topo - 1) * 100, 2)} desde o topo\n"
+        f"🚀 Para voltar ao ATH: +{br((topo / atual - 1) * 100, 0)}% ({_vezes(topo / atual)})\n"
+        + (f"🏦 Market cap no ATH com o supply atual: US$ {br(topo * circulante / 1e9, 2)} bi\n"
+           if circulante else "")
+    )
+    if semanas and dias:
+        mensagem += "\n" + contexto_ath(semanas, dias, atual, topo, data_topo) + "\n"
+    # A mínima histórica (2022, quando o KAS mal era negociado) fica só como perspectiva
+    mensagem += (
+        f"\n🌱 Desde a mínima histórica ({mes_ano(data_atl.astimezone(BRASILIA))}): {_vezes(atual / atl)}\n\n"
+        "ℹ️ ATH: CoinGecko · ciclo e médias: MEXC"
+    )
+
+    if not semanas:
+        await enviar_so_texto(update, "ath", "sem histórico semanal", mensagem)
+        return
+    historico = [[c[0], float(c[4])] for c in semanas]
+    await responder_com_grafico(
+        update, "ath", charts.grafico_ath, historico, atual, topo, data_topo.astimezone(BRASILIA),
+        fundo_do_ciclo(semanas, dias or [], data_topo), media_200_semanas(semanas), legenda=mensagem,
+    )

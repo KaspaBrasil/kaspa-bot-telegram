@@ -13,75 +13,77 @@ BOAS_VINDAS_SALDO = "🔒 Pronto! Agora mande aqui no privado: `/saldo kaspa:...
 AJUDA = (
     "📖 *Comandos disponíveis:*  \n\n"
     "📈 Dados ao vivo:  \n"
-    "/preco — Preço atual do KAS  \n"
-    "/kasbtc — Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)  \n"
-    "/hashrate — Hashrate da rede  \n"
-    "/halving — Próxima redução da recompensa  \n"
-    "/supply — Quanto já foi minerado e emissão  \n"
-    "/rede — Transações e status da rede  \n"
+    "/ath — Máxima histórica (ATH) e ciclo atual do KAS  \n"
     "/ativos — Endereços ativos: a rede está crescendo?  \n"
-    "/tx — Consultar uma transação (ex: /tx <hash>)  \n"
-    "/saldo — Consultar uma carteira (ex: /saldo kaspa:...)  \n"
     "/baleias — Maiores endereços e concentração  \n"
     "/calc — Calculadora de mineração (ex: /calc 21)  \n"
-    "/sou — Em qual faixa de holders você está (ex: /sou 5000)  \n\n"
+    "/halving — Próxima redução da recompensa  \n"
+    "/hashrate — Hashrate da rede  \n"
+    "/kasbtc — Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)  \n"
+    "/mineracao — Painel de mineração e links úteis  \n"
+    "/preco — Preço atual do KAS  \n"
+    "/rede — Transações e status da rede  \n"
+    "/saldo — Consultar uma carteira (ex: /saldo kaspa:...)  \n"
+    "/sou — Em qual faixa de holders você está (ex: /sou 5000)  \n"
+    "/supply — Quanto já foi minerado e emissão  \n"
+    "/tx — Consultar uma transação (ex: /tx <hash>)  \n\n"
     "📚 Links e comunidade:  \n"
-    "/regras — Regras do Grupo  \n"
-    "/info — Informações gerais sobre Kaspa  \n"
     "/analises — Ferramentas de Análise  \n"
-    "/ferramentas — Ferramentas e Serviços Técnicos  \n"
-    "/media — Comunidade e Mídia  \n"
-    "/shop — Mercado e comércio  \n"
-    "/projetos — Projetos e Recursos Criativos  \n"
-    "/jogos — Jogos  \n"
-    "/educacao — Educacional  \n"
     "/defi — DeFi, Tokens e Layer 2  \n"
-    "/mineracao — Mineração  \n"
-    "/p2p — P2P Oficiais do Grupo  \n"
+    "/doacoes — Doações para o Projeto  \n"
+    "/educacao — Educacional  \n"
     "/exchangesg — Corretoras Grandes  \n"
     "/exchangesp — Corretoras Pequenas  \n"
-    "/swap — Serviços de Swap  \n"
+    "/ferramentas — Ferramentas e Serviços Técnicos  \n"
     "/fiat_cripto — Plataformas Fiat/Cripto  \n"
-    "/hotwallets — Hotwallets Recomendadas e Outras  \n"
     "/hardwallets — Coldwallets e Hardwallets  \n"
-    "/twitter — Melhores Contas no X (Twitter)  \n"
-    "/doacoes — Doações para o Projeto  "
+    "/hotwallets — Hotwallets Recomendadas e Outras  \n"
+    "/info — Informações gerais sobre Kaspa  \n"
+    "/jogos — Jogos  \n"
+    "/media — Comunidade e Mídia  \n"
+    "/p2p — P2P Oficiais do Grupo  \n"
+    "/projetos — Projetos e Recursos Criativos  \n"
+    "/regras — Regras do Grupo  \n"
+    "/shop — Mercado e comércio  \n"
+    "/swap — Serviços de Swap  \n"
+    "/twitter — Melhores Contas no X (Twitter)  "
 )
 
 # 📋 Menu de comandos do Telegram (o "/" no campo de mensagem), atualizado ao iniciar o bot
 MENU_COMANDOS = [
-    ("preco", "Preço atual do KAS"),
-    ("hashrate", "Hashrate da rede"),
-    ("halving", "Próxima redução da recompensa"),
-    ("kasbtc", "Par KAS/BTC com gráfico (30d a 5 anos)"),
-    ("supply", "Quanto já foi minerado e emissão"),
-    ("rede", "Transações e status da rede"),
+    ("ath", "Máxima histórica (ATH) e ciclo atual"),
     ("ativos", "Endereços ativos: a rede está crescendo?"),
-    ("tx", "Consultar uma transação (ex: /tx <hash>)"),
-    ("saldo", "Consultar uma carteira (ex: /saldo kaspa:...)"),
     ("baleias", "Maiores endereços e concentração"),
     ("calc", "Calculadora de mineração (ex: /calc 21)"),
+    ("halving", "Próxima redução da recompensa"),
+    ("hashrate", "Hashrate da rede"),
+    ("kasbtc", "Par KAS/BTC com gráfico (30d a 5 anos)"),
+    ("mineracao", "Painel de mineração e links úteis"),
+    ("preco", "Preço atual do KAS"),
+    ("rede", "Transações e status da rede"),
+    ("saldo", "Consultar uma carteira (ex: /saldo kaspa:...)"),
     ("sou", "Em qual faixa de holders você está (ex: /sou 5000)"),
-    ("regras", "Regras do Grupo"),
-    ("info", "Informações gerais sobre Kaspa"),
+    ("supply", "Quanto já foi minerado e emissão"),
+    ("tx", "Consultar uma transação (ex: /tx <hash>)"),
     ("analises", "Ferramentas de Análise"),
-    ("ferramentas", "Ferramentas e Serviços Técnicos"),
-    ("media", "Comunidade e Mídia"),
-    ("shop", "Mercado e comércio"),
-    ("projetos", "Projetos e Recursos Criativos"),
-    ("jogos", "Jogos"),
-    ("educacao", "Educacional"),
     ("defi", "DeFi, Tokens e Layer 2"),
-    ("mineracao", "Mineração"),
-    ("p2p", "P2P Oficiais do Grupo"),
+    ("doacoes", "Doações para o Projeto"),
+    ("educacao", "Educacional"),
     ("exchangesg", "Corretoras Grandes"),
     ("exchangesp", "Corretoras Pequenas"),
-    ("swap", "Serviços de Swap"),
+    ("ferramentas", "Ferramentas e Serviços Técnicos"),
     ("fiat_cripto", "Plataformas Fiat/Cripto"),
-    ("hotwallets", "Hotwallets Recomendadas e Outras"),
     ("hardwallets", "Coldwallets e Hardwallets"),
+    ("hotwallets", "Hotwallets Recomendadas e Outras"),
+    ("info", "Informações gerais sobre Kaspa"),
+    ("jogos", "Jogos"),
+    ("media", "Comunidade e Mídia"),
+    ("p2p", "P2P Oficiais do Grupo"),
+    ("projetos", "Projetos e Recursos Criativos"),
+    ("regras", "Regras do Grupo"),
+    ("shop", "Mercado e comércio"),
+    ("swap", "Serviços de Swap"),
     ("twitter", "Melhores Contas no X (Twitter)"),
-    ("doacoes", "Doações para o Projeto"),
     ("help", "Lista todos os comandos"),
 ]
 

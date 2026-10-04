@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler
 
 from comandos.carteiras import baleias, saldo, sou
-from comandos.mercado import kasbtc, kasbtc_botao, preco
+from comandos.mercado import ath, kasbtc, kasbtc_botao, preco
 from comandos.mineracao import calc, halving, hashrate, mineracao, supply
 from comandos.paginas import ajuda, pagina, start
 from comandos.rede import ativos, rede
@@ -19,6 +19,7 @@ COMANDOS = {
     # 📈 Dados ao vivo
     "preco": preco,
     "kasbtc": kasbtc,
+    "ath": ath,
     "hashrate": hashrate,
     "halving": halving,
     "supply": supply,

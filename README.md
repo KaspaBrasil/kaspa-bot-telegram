@@ -24,42 +24,44 @@ Um bot para Telegram focado na comunidade Kaspa Brasil, trazendo informações, 
 ```
 /start         - Mensagem de boas-vindas
 /help          - Lista todos os comandos
-/preco         - Preço atual do KAS (USD/BRL/sats)
+/ath           - Máxima histórica (ATH) e o ciclo atual: quanto falta para voltar ao topo,
+                 fundo do ciclo, média de 200 semanas, faixa de 52 semanas e gráfico
+/ativos        - Endereços ativos por hora vs. dia típico do mês, com gráfico
+/baleias       - Maiores endereços (com nomes conhecidos) e concentração
+/calc          - Calculadora de mineração: /calc 21 [watts] [R$/kWh]
+/halving       - Próxima redução da recompensa e emissão diária
+/hashrate      - Hashrate atual e recorde da rede
 /kasbtc        - Par KAS/BTC em satoshis, com gráfico e botões de período
                  (30d, 90d, 180d, 1 ano, 5 anos) — também aceita /kasbtc 90d, /kasbtc 1a...
                  Mostra quanto KAS e BTC renderam em dólar no período e qual compra rendeu mais
-/hashrate      - Hashrate atual e recorde da rede
-/halving       - Próxima redução da recompensa e emissão diária
-/supply        - Quanto já foi minerado, inflação e projeção
+/mineracao     - Painel de mineração (hashrate, recompensa, emissão) e links úteis
+/preco         - Preço atual do KAS (USD/BRL/sats)
 /rede          - Transações por dia e status da rede
-/ativos        - Endereços ativos por hora vs. dia típico do mês, com gráfico
-/tx            - Consultar transação: /tx <hash ou link do explorer>
-                 (confirmações, valor, taxa, origem e destino com nomes conhecidos)
 /saldo         - Consultar carteira: /saldo kaspa:... (saldo em KAS/BRL, posição entre
                  os holders, variação em 30 dias e UTXOs). Em grupos responde no privado
-/baleias       - Maiores endereços (com nomes conhecidos) e concentração
-/calc          - Calculadora de mineração: /calc 21 [watts] [R$/kWh]
 /sou           - Em qual faixa de holders você está: /sou 5000
-/regras        - Regras do Grupo
-/info          - Informações gerais sobre Kaspa
+/supply        - Quanto já foi minerado, inflação e projeção
+/tx            - Consultar transação: /tx <hash ou link do explorer>
+                 (confirmações, valor, taxa, origem e destino com nomes conhecidos)
 /analises      - Ferramentas de Análise
-/ferramentas   - Ferramentas e Serviços Técnicos
-/media         - Comunidade e Mídia
-/shop          - Mercado e comércio
-/projetos      - Projetos e Recursos Criativos
-/jogos         - Jogos
-/educacao      - Educacional
 /defi          - DeFi, Tokens e Layer 2
-/mineracao     - Mineração
-/p2p           - P2P Oficiais do Grupo
+/doacoes       - Doações para o Projeto
+/educacao      - Educacional
 /exchangesg    - Corretoras Grandes
 /exchangesp    - Corretoras Pequenas
-/swap          - Serviços de Swap
+/ferramentas   - Ferramentas e Serviços Técnicos
 /fiat_cripto   - Plataformas Fiat/Cripto
-/hotwallets    - Hotwallets Recomendadas e Outras
 /hardwallets   - Coldwallets e Hardwallets
+/hotwallets    - Hotwallets Recomendadas e Outras
+/info          - Informações gerais sobre Kaspa
+/jogos         - Jogos
+/media         - Comunidade e Mídia
+/p2p           - P2P Oficiais do Grupo
+/projetos      - Projetos e Recursos Criativos
+/regras        - Regras do Grupo
+/shop          - Mercado e comércio
+/swap          - Serviços de Swap
 /twitter       - Melhores Contas no X (Twitter)
-/doacoes       - Doações para o Projeto
 ```
 
 Os comandos de dados ao vivo usam a [API da Kaspa](https://api.kaspa.org/docs)
@@ -78,7 +80,7 @@ bot.py            Inicialização e registro dos comandos
 textos.py         Textos fixos: boas-vindas, ajuda, menu e páginas de links (edite aqui)
 comandos/         Handlers dos comandos, por assunto
   paginas.py        /start, /help e as páginas de links
-  mercado.py        /preco, /kasbtc
+  mercado.py        /preco, /kasbtc, /ath
   mineracao.py      /hashrate, /halving, /supply, /mineracao, /calc
   rede.py           /rede, /ativos
   carteiras.py      /sou, /baleias, /saldo
