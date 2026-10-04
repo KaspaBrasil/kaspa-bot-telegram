@@ -1,4 +1,5 @@
 """Acesso às APIs (https://api.kaspa.org/docs, CoinGecko e MEXC), com cache das respostas."""
+import os
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -12,19 +13,37 @@ EXPLORER = "https://explorer.kaspa.org"
 
 # 🛡️ Respostas das APIs ficam em cache: no máximo 1 consulta por minuto a cada endpoint
 CACHE_API = 60  # segundos
+LIMPAR_CACHE_A_CADA = 200  # respostas novas guardadas entre uma limpeza e outra
 _cache_api = {}
+_guardadas = 0
+
+
+def _limpar_cache_vencido(agora: datetime) -> None:
+    # Cada /tx e /saldo consulta uma URL diferente: sem isso, o cache cresceria para sempre
+    for chave in [c for c, (expira, _) in _cache_api.items() if expira <= agora]:
+        del _cache_api[chave]
+
+
+def _cabecalhos(url: str) -> dict:
+    # Chave "Demo" (grátis) da CoinGecko: limite de consultas bem maior que o acesso anônimo
+    chave = os.getenv("COINGECKO_API_KEY")
+    return {"x-cg-demo-api-key": chave} if chave and url.startswith(COINGECKO_API) else {}
 
 
 async def get_json(client: httpx.AsyncClient, url: str, cache: int = CACHE_API, **params):
+    global _guardadas
     chave = (url, tuple(sorted(params.items())))
     agora = datetime.now(tz=timezone.utc)
-    if chave in _cache_api and (agora - _cache_api[chave][0]).total_seconds() < cache:
+    if chave in _cache_api and _cache_api[chave][0] > agora:
         return _cache_api[chave][1]
-    response = await client.get(url, params=params, timeout=20)
+    response = await client.get(url, params=params, headers=_cabecalhos(url), timeout=20)
     response.raise_for_status()
     dados = response.json()
     if cache:  # cache=0: não guarda (respostas grandes que são resumidas por quem chamou)
-        _cache_api[chave] = (agora, dados)
+        _cache_api[chave] = (agora + timedelta(seconds=cache), dados)
+        _guardadas += 1
+        if _guardadas % LIMPAR_CACHE_A_CADA == 0:
+            _limpar_cache_vencido(agora)
     return dados
 
 
@@ -47,6 +66,13 @@ async def cotacao(client: httpx.AsyncClient):
     except Exception as e:
         print(f"Erro CoinGecko: {e}")
         return None
+
+
+async def preco_mexc(client: httpx.AsyncClient, cache: int = CACHE_API) -> tuple[float, float]:
+    """(preço do KAS em USDT, variação em 24h em %) na MEXC: sem limite apertado de consultas,
+    serve de reserva quando a CoinGecko falha (1 USDT ≈ 1 US$)."""
+    dados = await get_json(client, f"{MEXC_API}/ticker/24hr", cache=cache, symbol="KASUSDT")
+    return float(dados["lastPrice"]), float(dados["priceChangePercent"]) * 100
 
 
 # 📡 Rede

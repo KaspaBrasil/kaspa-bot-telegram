@@ -1,4 +1,6 @@
-python-telegram-bot==20.8
-python-dotenv
-httpx
-matplotlib
+# Versões travadas para um deploy novo não quebrar com uma atualização incompatível.
+# [job-queue]: agendador usado pelos alertas de preço e pelo resumo diário
+python-telegram-bot[job-queue]==20.8
+httpx~=0.26.0
+matplotlib>=3.8,<4
+python-dotenv>=1.0,<2

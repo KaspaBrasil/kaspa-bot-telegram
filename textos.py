@@ -7,85 +7,31 @@ BOAS_VINDAS = """
 Use /help para ver todos os comandos disponíveis.
 """
 
-# Resposta ao /start vindo do link que o /saldo manda no grupo
+# Respostas ao /start vindo dos links que o /saldo e o /alerta mandam no grupo
 BOAS_VINDAS_SALDO = "🔒 Pronto! Agora mande aqui no privado: `/saldo kaspa:...`"
+BOAS_VINDAS_ALERTA = "🔔 Pronto! Agora mande aqui o preço do alerta, em US$: `/alerta 0,05`"
 
-AJUDA = (
-    "📖 *Comandos disponíveis:*  \n\n"
-    "📈 Dados ao vivo:  \n"
-    "/ath — Máxima histórica (ATH) e ciclo atual do KAS  \n"
-    "/ativos — Endereços ativos: a rede está crescendo?  \n"
-    "/baleias — Maiores endereços e concentração  \n"
-    "/calc — Calculadora de mineração (ex: /calc 21)  \n"
-    "/halving — Próxima redução da recompensa  \n"
-    "/hashrate — Hashrate da rede  \n"
-    "/kasbtc — Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)  \n"
-    "/mineracao — Painel de mineração e links úteis  \n"
-    "/preco — Preço atual do KAS  \n"
-    "/rede — Transações e status da rede  \n"
-    "/saldo — Consultar uma carteira (ex: /saldo kaspa:...)  \n"
-    "/sou — Em qual faixa de holders você está (ex: /sou 5000)  \n"
-    "/supply — Quanto já foi minerado e emissão  \n"
-    "/tx — Consultar uma transação (ex: /tx <hash>)  \n\n"
-    "📚 Links e comunidade:  \n"
-    "/analises — Ferramentas de Análise  \n"
-    "/defi — DeFi, Tokens e Layer 2  \n"
-    "/doacoes — Doações para o Projeto  \n"
-    "/educacao — Educacional  \n"
-    "/exchangesg — Corretoras Grandes  \n"
-    "/exchangesp — Corretoras Pequenas  \n"
-    "/ferramentas — Ferramentas e Serviços Técnicos  \n"
-    "/fiat_cripto — Plataformas Fiat/Cripto  \n"
-    "/hardwallets — Coldwallets e Hardwallets  \n"
-    "/hotwallets — Hotwallets Recomendadas e Outras  \n"
-    "/info — Informações gerais sobre Kaspa  \n"
-    "/jogos — Jogos  \n"
-    "/media — Comunidade e Mídia  \n"
-    "/p2p — P2P Oficiais do Grupo  \n"
-    "/projetos — Projetos e Recursos Criativos  \n"
-    "/regras — Regras do Grupo  \n"
-    "/shop — Mercado e comércio  \n"
-    "/swap — Serviços de Swap  \n"
-    "/twitter — Melhores Contas no X (Twitter)  "
-)
-
-# 📋 Menu de comandos do Telegram (o "/" no campo de mensagem), atualizado ao iniciar o bot
-MENU_COMANDOS = [
-    ("ath", "Máxima histórica (ATH) e ciclo atual"),
-    ("ativos", "Endereços ativos: a rede está crescendo?"),
-    ("baleias", "Maiores endereços e concentração"),
-    ("calc", "Calculadora de mineração (ex: /calc 21)"),
-    ("halving", "Próxima redução da recompensa"),
-    ("hashrate", "Hashrate da rede"),
-    ("kasbtc", "Par KAS/BTC com gráfico (30d a 5 anos)"),
-    ("mineracao", "Painel de mineração e links úteis"),
-    ("preco", "Preço atual do KAS"),
-    ("rede", "Transações e status da rede"),
-    ("saldo", "Consultar uma carteira (ex: /saldo kaspa:...)"),
-    ("sou", "Em qual faixa de holders você está (ex: /sou 5000)"),
-    ("supply", "Quanto já foi minerado e emissão"),
-    ("tx", "Consultar uma transação (ex: /tx <hash>)"),
-    ("analises", "Ferramentas de Análise"),
-    ("defi", "DeFi, Tokens e Layer 2"),
-    ("doacoes", "Doações para o Projeto"),
-    ("educacao", "Educacional"),
-    ("exchangesg", "Corretoras Grandes"),
-    ("exchangesp", "Corretoras Pequenas"),
-    ("ferramentas", "Ferramentas e Serviços Técnicos"),
-    ("fiat_cripto", "Plataformas Fiat/Cripto"),
-    ("hardwallets", "Coldwallets e Hardwallets"),
-    ("hotwallets", "Hotwallets Recomendadas e Outras"),
-    ("info", "Informações gerais sobre Kaspa"),
-    ("jogos", "Jogos"),
-    ("media", "Comunidade e Mídia"),
-    ("p2p", "P2P Oficiais do Grupo"),
-    ("projetos", "Projetos e Recursos Criativos"),
-    ("regras", "Regras do Grupo"),
-    ("shop", "Mercado e comércio"),
-    ("swap", "Serviços de Swap"),
-    ("twitter", "Melhores Contas no X (Twitter)"),
-    ("help", "Lista todos os comandos"),
-]
+# 📈 Comandos de dados ao vivo: comando -> descrição no /help e no menu do "/".
+# Os handlers ficam em bot.py; o bot não inicia se as duas listas não baterem.
+DADOS_AO_VIVO = {
+    "alerta": "Aviso no privado quando o preço chegar num valor (ex: /alerta 0,05)",
+    "ath": "Máxima histórica (ATH) e ciclo atual do KAS",
+    "ativos": "Endereços ativos: a rede está crescendo?",
+    "baleias": "Maiores endereços e concentração",
+    "calc": "Calculadora de mineração (ex: /calc 21)",
+    "converter": "Converte KAS, R$, US$ e sats (ex: /converter 1000)",
+    "halving": "Próxima redução da recompensa",
+    "hashrate": "Hashrate da rede",
+    "kasbtc": "Par KAS/BTC com gráfico (30d, 90d, 180d, 1 ano, 5 anos)",
+    "mineracao": "Painel de mineração e links úteis",
+    "preco": "Preço atual do KAS",
+    "rede": "Transações e status da rede",
+    "resumo": "Resumo do dia: preço, ATH, hashrate e rede",
+    "saldo": "Consultar uma carteira (ex: /saldo kaspa:...)",
+    "sou": "Em qual faixa de holders você está (ex: /sou 5000)",
+    "supply": "Quanto já foi minerado e emissão",
+    "tx": "Consultar uma transação (ex: /tx <hash>)",
+}
 
 # 🔗 Páginas de links
 
@@ -424,26 +370,45 @@ LINKS_MINERACAO = """
 """
 
 
-# comando: (texto, parse_mode)
+# 📚 Páginas de links: comando -> (descrição no /help e no menu, texto, parse_mode).
+# Descrição None: o comando funciona, mas não aparece nas listas.
 PAGINAS = {
-    "regras": (REGRAS, "Markdown"),
-    "info": (INFO, "Markdown"),
-    "analises": (ANALISES, "Markdown"),
-    "ferramentas": (FERRAMENTAS, "Markdown"),
-    "media": (MEDIA, "Markdown"),
-    "shop": (SHOP, "Markdown"),
-    "projetos": (PROJETOS, "Markdown"),
-    "jogos": (JOGOS, "Markdown"),
-    "educacao": (EDUCACAO, "Markdown"),
-    "defi": (DEFI, "Markdown"),
-    "p2p": (P2P, "MarkdownV2"),
-    "exchangesg": (EXCHANGES_GRANDES, "Markdown"),
-    "exchangesp": (EXCHANGES_PEQUENAS, "Markdown"),
-    "swap": (SWAP, "Markdown"),
-    "fiat_cripto": (FIAT_CRIPTO, "Markdown"),
-    "hotwallets": (HOTWALLETS, "Markdown"),
-    "hotwallets_caution": (HOTWALLETS, "Markdown"),
-    "hardwallets": (HARDWALLETS, "Markdown"),
-    "twitter": (TWITTER, "MarkdownV2"),
-    "doacoes": (DOACOES, "Markdown"),
+    "analises": ("Ferramentas de Análise", ANALISES, "Markdown"),
+    "defi": ("DeFi, Tokens e Layer 2", DEFI, "Markdown"),
+    "doacoes": ("Doações para o Projeto", DOACOES, "Markdown"),
+    "educacao": ("Educacional", EDUCACAO, "Markdown"),
+    "exchangesg": ("Corretoras Grandes", EXCHANGES_GRANDES, "Markdown"),
+    "exchangesp": ("Corretoras Pequenas", EXCHANGES_PEQUENAS, "Markdown"),
+    "ferramentas": ("Ferramentas e Serviços Técnicos", FERRAMENTAS, "Markdown"),
+    "fiat_cripto": ("Plataformas Fiat/Cripto", FIAT_CRIPTO, "Markdown"),
+    "hardwallets": ("Coldwallets e Hardwallets", HARDWALLETS, "Markdown"),
+    "hotwallets": ("Hotwallets Recomendadas e Outras", HOTWALLETS, "Markdown"),
+    "hotwallets_caution": (None, HOTWALLETS, "Markdown"),
+    "info": ("Informações gerais sobre Kaspa", INFO, "Markdown"),
+    "jogos": ("Jogos", JOGOS, "Markdown"),
+    "media": ("Comunidade e Mídia", MEDIA, "Markdown"),
+    "p2p": ("P2P Oficiais do Grupo", P2P, "MarkdownV2"),
+    "projetos": ("Projetos e Recursos Criativos", PROJETOS, "Markdown"),
+    "regras": ("Regras do Grupo", REGRAS, "Markdown"),
+    "shop": ("Mercado e comércio", SHOP, "Markdown"),
+    "swap": ("Serviços de Swap", SWAP, "Markdown"),
+    "twitter": ("Melhores Contas no X (Twitter)", TWITTER, "MarkdownV2"),
 }
+
+
+# 📖 /help e 📋 menu do "/" (atualizado ao iniciar o bot): gerados das duas listas acima,
+# primeiro os dados ao vivo e depois as páginas, cada grupo em ordem alfabética
+def _em_ordem(comandos: dict) -> list:
+    return sorted(comandos.items())
+
+
+LINKS = {nome: descricao for nome, (descricao, *_) in PAGINAS.items() if descricao}
+
+AJUDA = (
+    "📖 *Comandos disponíveis:*  \n\n📈 Dados ao vivo:  \n"
+    + "".join(f"/{nome} — {descricao}  \n" for nome, descricao in _em_ordem(DADOS_AO_VIVO))
+    + "\n📚 Links e comunidade:  \n"
+    + "".join(f"/{nome} — {descricao}  \n" for nome, descricao in _em_ordem(LINKS))
+).rstrip("\n")
+
+MENU_COMANDOS = _em_ordem(DADOS_AO_VIVO) + _em_ordem(LINKS) + [("help", "Lista todos os comandos")]

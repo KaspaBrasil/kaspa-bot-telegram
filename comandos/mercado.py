@@ -1,4 +1,4 @@
-"""/preco, /kasbtc (com botões de período) e /ath."""
+"""/preco, /kasbtc (com botões de período), /ath e /converter."""
 import asyncio
 from datetime import datetime, timedelta, timezone
 
@@ -8,10 +8,10 @@ from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 import charts
-from api import COINGECKO_API, KASPA_API, MEXC_API, cotacao, get_json, opcional, supply_kas
+from api import COINGECKO_API, KASPA_API, MEXC_API, cotacao, get_json, opcional, preco_mexc, supply_kas
 from envio import enviar_so_texto, falha_api, grafico_em_cache, guardar_grafico, pode_pedir, pode_responder, \
     responder_com_grafico
-from formatacao import BRASILIA, br, br_minimo, mes_ano
+from formatacao import BRASILIA, br, br_minimo, ler_numero, mes_ano
 
 
 async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -30,7 +30,7 @@ async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         cg = await cotacao(client)
         try:
             historico = (await get_json(
-                client, f"{COINGECKO_API}/coins/kaspa/market_chart", vs_currency="brl", days=30,
+                client, f"{COINGECKO_API}/coins/kaspa/market_chart", cache=300, vs_currency="brl", days=30,
             ))["prices"]
         except Exception as e:
             print(f"Erro CoinGecko: {e}")
@@ -291,52 +291,80 @@ def contexto_ath(semanas: list, dias: list, atual: float, ath: float, data_ath: 
     return "\n".join(linhas)
 
 
+def _data_iso(texto: str) -> datetime:
+    return datetime.fromisoformat(texto.replace("Z", "+00:00"))
+
+
+def ath_coingecko(md: dict) -> dict:
+    return {
+        "atual": md["current_price"]["usd"], "atual_brl": md["current_price"].get("brl"),
+        "topo": md["ath"]["usd"], "topo_brl": md["ath"].get("brl"), "data_topo": _data_iso(md["ath_date"]["usd"]),
+        "atl": md["atl"]["usd"], "data_atl": _data_iso(md["atl_date"]["usd"]),
+        "circulante": md.get("circulating_supply"), "data_aproximada": False,
+    }
+
+
+def ath_mexc(semanas: list, atual: float, circulante) -> dict:
+    """Reserva quando a CoinGecko falha: a máxima dos candles semanais da MEXC (o ATH de jul/2024
+    está dentro do histórico). A data é a da semana, e a mínima de 2022 fica de fora (é anterior)."""
+    topo = max(semanas, key=lambda c: float(c[2]))
+    return {
+        "atual": atual, "atual_brl": None, "topo": float(topo[2]), "topo_brl": None,
+        "data_topo": _data_candle(topo), "atl": None, "data_atl": None,
+        "circulante": circulante, "data_aproximada": True,
+    }
+
+
 async def ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not pode_responder(update, "ath"):
         return
     async with httpx.AsyncClient() as client:
-        try:
-            dados = (await get_json(
+        md, semanas, dias = await asyncio.gather(
+            opcional(get_json(
                 client, f"{COINGECKO_API}/coins/kaspa", cache=300, localization="false", tickers="false",
                 community_data="false", developer_data="false", sparkline="false",
-            ))["market_data"]
-        except Exception as e:
-            await falha_api(update, "ath", e)
-            return
-        # Histórico da MEXC (opcional: sem ele, vai só o texto com os dados da CoinGecko)
-        semanas, dias = await asyncio.gather(
+            ), "CoinGecko /ath"),
+            # Histórico da MEXC: gráfico, fundo do ciclo e médias (e reserva do ATH)
             opcional(get_json(client, f"{MEXC_API}/klines", cache=600,
                               symbol="KASUSDT", interval="1W", limit=1000), "semanal /ath"),
             opcional(get_json(client, f"{MEXC_API}/klines", cache=600,
                               symbol="KASUSDT", interval="1d", limit=365), "diário /ath"),
         )
+        try:
+            if md:
+                d = ath_coingecko(md["market_data"])
+            elif semanas:
+                atual, _ = await preco_mexc(client)
+                supply = await opcional(supply_kas(client), "supply /ath")
+                d = ath_mexc(semanas, atual, supply[0] if supply else None)
+            else:
+                raise RuntimeError("CoinGecko e MEXC indisponíveis")
+        except Exception as e:
+            await falha_api(update, "ath", e)
+            return
 
-    atual = dados["current_price"]["usd"]
-    topo, atl = dados["ath"]["usd"], dados["atl"]["usd"]
-    data_topo = datetime.fromisoformat(dados["ath_date"]["usd"].replace("Z", "+00:00"))
-    data_atl = datetime.fromisoformat(dados["atl_date"]["usd"].replace("Z", "+00:00"))
-    circulante = dados.get("circulating_supply")
-
+    atual, topo, data_topo = d["atual"], d["topo"], d["data_topo"]
+    data_texto = f"semana de {data_topo:%d/%m/%Y}" if d["data_aproximada"] else \
+        f"{data_topo.astimezone(BRASILIA):%d/%m/%Y}"
     mensagem = (
         "🏔️ *KAS · Máxima histórica e ciclo atual*\n\n"
-        f"💲 Agora: {_usd(atual)}"
-        + (f" · R$ {br(dados['current_price']['brl'], 4)}" if dados["current_price"].get("brl") else "")
-        + "\n\n"
+        f"💲 Agora: {_usd(atual)}" + (f" · R$ {br(d['atual_brl'], 4)}" if d["atual_brl"] else "") + "\n\n"
         "📈 *ATH (máxima histórica)*\n"
-        f"{_usd(topo)}" + (f" · R$ {br(dados['ath']['brl'])}" if dados["ath"].get("brl") else "") + "\n"
-        f"📅 {data_topo.astimezone(BRASILIA):%d/%m/%Y} · {_dias(data_topo)}\n"
+        f"{_usd(topo)}" + (f" · R$ {br(d['topo_brl'])}" if d["topo_brl"] else "") + "\n"
+        f"📅 {data_texto} · {_dias(data_topo)}\n"
         f"🔴 {_pct((atual / topo - 1) * 100, 2)} desde o topo\n"
         f"🚀 Para voltar ao ATH: +{br((topo / atual - 1) * 100, 0)}% ({_vezes(topo / atual)})\n"
-        + (f"🏦 Market cap no ATH com o supply atual: US$ {br(topo * circulante / 1e9, 2)} bi\n"
-           if circulante else "")
+        + (f"🏦 Market cap no ATH com o supply atual: US$ {br(topo * d['circulante'] / 1e9, 2)} bi\n"
+           if d["circulante"] else "")
     )
     if semanas and dias:
         mensagem += "\n" + contexto_ath(semanas, dias, atual, topo, data_topo) + "\n"
     # A mínima histórica (2022, quando o KAS mal era negociado) fica só como perspectiva
-    mensagem += (
-        f"\n🌱 Desde a mínima histórica ({mes_ano(data_atl.astimezone(BRASILIA))}): {_vezes(atual / atl)}\n\n"
-        "ℹ️ ATH: CoinGecko · ciclo e médias: MEXC"
-    )
+    if d["atl"]:
+        mensagem += f"\n🌱 Desde a mínima histórica ({mes_ano(d['data_atl'].astimezone(BRASILIA))}): " \
+                    f"{_vezes(atual / d['atl'])}\n"
+    mensagem += "\nℹ️ " + ("ATH: CoinGecko · ciclo e médias: MEXC" if md else
+                           "Dados: MEXC (CoinGecko indisponível agora)")
 
     if not semanas:
         await enviar_so_texto(update, "ath", "sem histórico semanal", mensagem)
@@ -346,3 +374,70 @@ async def ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         update, "ath", charts.grafico_ath, historico, atual, topo, data_topo.astimezone(BRASILIA),
         fundo_do_ciclo(semanas, dias or [], data_topo), media_200_semanas(semanas), legenda=mensagem,
     )
+
+
+# 💱 /converter: KAS ↔ R$, US$ e sats
+
+# (unidade, palavras que a identificam) — R$ antes de US$/$, já que "r$" também tem "$"
+UNIDADES = [
+    ("brl", ("r$", "brl", "reais", "real")),
+    ("usd", ("us$", "usd", "dólares", "dolares", "dólar", "dolar", "$")),
+    ("sats", ("sats", "sat", "satoshis")),
+    ("kas", ("kas",)),
+]
+
+
+def ler_conversao(args: list) -> tuple[float, str]:
+    """"/converter 1000" (KAS), "/converter 100 reais", "/converter R$100", "/converter 50 usd"..."""
+    texto = "".join(args).lower()
+    for unidade, palavras in UNIDADES:
+        for palavra in palavras:
+            if palavra in texto:
+                return ler_numero(texto.replace(palavra, "")), unidade
+    return ler_numero(texto), "kas"
+
+
+def _valor(unidade: str, quantidade: float) -> str:
+    if unidade == "kas":
+        return f"{br_minimo(quantidade)} KAS"
+    if unidade == "sats":
+        return f"{br(quantidade, 0 if quantidade >= 100 else 2)} sats"
+    return f"{'R$' if unidade == 'brl' else 'US$'} {br_minimo(quantidade)}"
+
+
+async def converter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not pode_responder(update, "converter", timedelta(seconds=3)):
+        return
+    try:
+        quantidade, unidade = ler_conversao(context.args)
+    except ValueError:
+        await update.effective_message.reply_text(
+            "💱 Ex: `/converter 1000` (KAS), `/converter 100 reais`, `/converter 50 usd`, `/converter 5000 sats`",
+            parse_mode="Markdown",
+        )
+        return
+
+    async with httpx.AsyncClient() as client:
+        cg = await cotacao(client)
+        if cg:
+            precos, fonte = {"usd": cg["usd"], "brl": cg["brl"], "sats": cg["btc"] * 1e8}, "CoinGecko"
+        else:
+            # Reserva: MEXC (sem cotação em reais)
+            try:
+                (usd, _), btc = await asyncio.gather(
+                    preco_mexc(client), get_json(client, f"{MEXC_API}/ticker/price", symbol="BTCUSDT"),
+                )
+            except Exception as e:
+                await falha_api(update, "converter", e)
+                return
+            precos, fonte = {"usd": usd, "sats": usd / float(btc["price"]) * 1e8}, "MEXC"
+    if unidade not in ("kas", *precos):
+        await update.effective_message.reply_text("⚠️ Cotação em reais indisponível agora. Tente em US$ ou KAS.")
+        return
+
+    kas = quantidade if unidade == "kas" else quantidade / precos[unidade]
+    linhas = [f"💱 *{_valor(unidade, quantidade)}*", ""]
+    linhas += [f"= {_valor('kas', kas)}"] if unidade != "kas" else []
+    linhas += [f"= {_valor(u, kas * p)}" for u, p in precos.items() if u != unidade]
+    linhas += ["", f"ℹ️ 1 KAS = US$ {br_minimo(precos['usd'], 4)} · cotação: {fonte}"]
+    await update.effective_message.reply_text("\n".join(linhas), parse_mode="Markdown")

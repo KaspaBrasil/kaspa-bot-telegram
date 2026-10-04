@@ -5,34 +5,48 @@ from pathlib import Path
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler
 
+from comandos.alertas import INTERVALO_VERIFICACAO, alerta, verificar_alertas
 from comandos.carteiras import baleias, saldo, sou
-from comandos.mercado import ath, kasbtc, kasbtc_botao, preco
+from comandos.mercado import ath, converter, kasbtc, kasbtc_botao, preco
 from comandos.mineracao import calc, halving, hashrate, mineracao, supply
 from comandos.paginas import ajuda, pagina, start
 from comandos.rede import ativos, rede
+from comandos.resumo import chats_do_resumo, enviar_resumo_diario, horario_do_resumo, resumo
 from comandos.transacoes import tx
-from textos import MENU_COMANDOS, PAGINAS
+from textos import DADOS_AO_VIVO, MENU_COMANDOS, PAGINAS
+
+# 📈 Dados ao vivo (descrições em textos.DADOS_AO_VIVO)
+COMANDOS_DADOS = {
+    "alerta": alerta,
+    "ath": ath,
+    "ativos": ativos,
+    "baleias": baleias,
+    "calc": calc,
+    "converter": converter,
+    "halving": halving,
+    "hashrate": hashrate,
+    "kasbtc": kasbtc,
+    "mineracao": mineracao,
+    "preco": preco,
+    "rede": rede,
+    "resumo": resumo,
+    "saldo": saldo,
+    "sou": sou,
+    "supply": supply,
+    "tx": tx,
+}
+if set(COMANDOS_DADOS) != set(DADOS_AO_VIVO):
+    raise RuntimeError(
+        "Comandos de dados sem descrição em textos.DADOS_AO_VIVO ou sem handler aqui: "
+        f"{sorted(set(COMANDOS_DADOS) ^ set(DADOS_AO_VIVO))}"
+    )
 
 COMANDOS = {
     "start": start,
     "help": ajuda,
-    # 📈 Dados ao vivo
-    "preco": preco,
-    "kasbtc": kasbtc,
-    "ath": ath,
-    "hashrate": hashrate,
-    "halving": halving,
-    "supply": supply,
-    "mineracao": mineracao,
-    "calc": calc,
-    "rede": rede,
-    "ativos": ativos,
-    "tx": tx,
-    "saldo": saldo,
-    "baleias": baleias,
-    "sou": sou,
+    **COMANDOS_DADOS,
     # 📚 Links e comunidade
-    **{nome: pagina(texto, parse_mode) for nome, (texto, parse_mode) in PAGINAS.items()},
+    **{nome: pagina(texto, parse_mode) for nome, (_, texto, parse_mode) in PAGINAS.items()},
 }
 
 
@@ -55,6 +69,14 @@ async def registrar_menu(app) -> None:
         print(f"Erro ao registrar menu de comandos: {e}")
 
 
+def agendar_tarefas(app) -> None:
+    # ⏰ Alertas de preço conferidos a cada minuto e, se RESUMO_CHAT_ID estiver definido, o resumo diário
+    app.job_queue.run_repeating(verificar_alertas, interval=INTERVALO_VERIFICACAO, first=10)
+    if chats_do_resumo():
+        app.job_queue.run_daily(enviar_resumo_diario, time=horario_do_resumo())
+        print(f"Resumo diário às {horario_do_resumo():%H:%M} (Brasília) para {chats_do_resumo()}")
+
+
 async def error_handler(update, context):
     print(f"Erro: {context.error}")
     if hasattr(update, 'effective_message') and update.effective_message:
@@ -67,6 +89,7 @@ def main():
         app.add_handler(CommandHandler(nome, funcao))
     app.add_handler(CallbackQueryHandler(kasbtc_botao, pattern=r"^kasbtc:"))
     app.add_error_handler(error_handler)
+    agendar_tarefas(app)
 
     print("Bot Kaspa Brasil rodando...")
     # drop_pending_updates: ignora comandos acumulados enquanto o bot estava fora do ar

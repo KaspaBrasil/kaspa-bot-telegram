@@ -2,12 +2,13 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from textos import AJUDA, BOAS_VINDAS, BOAS_VINDAS_SALDO
+from textos import AJUDA, BOAS_VINDAS, BOAS_VINDAS_ALERTA, BOAS_VINDAS_SALDO
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # "/start saldo": a pessoa veio pelo link que o /saldo manda no grupo
-    message = BOAS_VINDAS_SALDO if context.args and context.args[0] == "saldo" else BOAS_VINDAS
+    # "/start saldo" e "/start alerta": a pessoa veio pelo link que o /saldo ou o /alerta mandam no grupo
+    origem = context.args[0] if context.args else None
+    message = {"saldo": BOAS_VINDAS_SALDO, "alerta": BOAS_VINDAS_ALERTA}.get(origem, BOAS_VINDAS)
     if update.effective_message:
         await update.effective_message.reply_text(message, parse_mode="Markdown")
 
