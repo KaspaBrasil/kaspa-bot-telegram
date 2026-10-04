@@ -46,7 +46,7 @@ COMANDOS = {
     "help": ajuda,
     **COMANDOS_DADOS,
     # 📚 Links e comunidade
-    **{nome: pagina(texto, parse_mode) for nome, (_, texto, parse_mode) in PAGINAS.items()},
+    **{nome: pagina(nome, texto, parse_mode) for nome, (_, texto, parse_mode) in PAGINAS.items()},
 }
 
 

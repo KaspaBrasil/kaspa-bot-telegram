@@ -12,24 +12,36 @@ ERRO_API = "⚠️ Não foi possível obter os dados agora. Tente novamente em i
 # - no máximo 2 gráficos sendo gerados ao mesmo tempo
 # - cada usuário pode repetir o mesmo comando com gráfico a cada 10 segundos
 #   (e trocar o período do /kasbtc nos botões a cada 3 segundos)
+# - e, somando todos os comandos, no máximo 12 pedidos por minuto por usuário
 CACHE_GRAFICO = timedelta(seconds=60)
 INTERVALO_POR_USUARIO = timedelta(seconds=10)
+LIMITE_GERAL = 12
+JANELA_GERAL = timedelta(seconds=60)
 _cache_graficos = {}
 _travas_graficos = {}
 _ultimo_pedido = {}
+_pedidos_recentes = {}  # usuário -> horários dos pedidos dentro da janela
 _limite_graficos = asyncio.Semaphore(2)
 
 
 def pode_pedir(update: Update, comando: str, intervalo: timedelta = INTERVALO_POR_USUARIO) -> bool:
-    """Limita quantas vezes cada usuário pode usar o mesmo comando com gráfico."""
-    chave = (update.effective_user.id if update.effective_user else None, comando)
+    """Limita quantas vezes cada usuário pode repetir o mesmo comando e quantos pedidos
+    ele faz por minuto somando todos (alternar entre comandos não fura o limite)."""
+    usuario = update.effective_user.id if update.effective_user else None
+    chave = (usuario, comando)
     agora = datetime.now(tz=timezone.utc)
     if chave in _ultimo_pedido and agora - _ultimo_pedido[chave] < intervalo:
-        print(f"[limite] /{comando} ignorado do usuário {chave[0]}")
+        print(f"[limite] /{comando} ignorado do usuário {usuario}")
+        return False
+    recentes = [t for t in _pedidos_recentes.get(usuario, []) if agora - t < JANELA_GERAL]
+    if len(recentes) >= LIMITE_GERAL:
+        print(f"[limite geral] /{comando} ignorado do usuário {usuario}")
         return False
     if len(_ultimo_pedido) > 5000:  # evita crescer para sempre
         _ultimo_pedido.clear()
+        _pedidos_recentes.clear()
     _ultimo_pedido[chave] = agora
+    _pedidos_recentes[usuario] = recentes + [agora]
     return True
 
 

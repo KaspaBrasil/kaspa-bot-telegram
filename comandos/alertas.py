@@ -15,6 +15,7 @@ from envio import ERRO_API, pode_responder
 from formatacao import br_minimo, ler_numero
 
 MAXIMO_POR_USUARIO = 5
+MAXIMO_TOTAL = 5000  # teto do banco inteiro, contra contas falsas em massa
 INTERVALO_VERIFICACAO = 60  # segundos
 
 USO = (
@@ -113,6 +114,11 @@ async def alerta(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             raise ValueError("preço fora da realidade")
     except ValueError:
         await mensagem.reply_text("Não entendi o preço. Ex: `/alerta 0,05` (em US$)", parse_mode="Markdown")
+        return
+    with _banco() as banco:
+        total = banco.execute("SELECT COUNT(*) FROM alertas").fetchone()[0]
+    if total >= MAXIMO_TOTAL:
+        await mensagem.reply_text("⚠️ O limite de alertas do bot foi atingido. Tente de novo mais tarde.")
         return
     if len(alertas) >= MAXIMO_POR_USUARIO:
         await mensagem.reply_text(
