@@ -72,6 +72,9 @@ INFO = """
 ANALISES = """
 📊 **Ferramentas de Análise:**
 
+🇧🇷 **Kaspa Brasil Analytics:**
+• https://kaspabrasil.github.io/kaspa-brasil-analytics/
+
 🔎 **Exploradores:**
 • https://explorer.kaspa.org/
 • https://kas.fyi/
@@ -82,6 +85,7 @@ ANALISES = """
 • https://explorer.kasplex.org/
 
 📈 **Estatísticas e Gráficos:**
+• https://kaspabrasil.github.io/kaspa-brasil-analytics/
 • https://www.kaspalytics.com/
 • https://analytics.kasmedia.com/
 • https://kaspa-lens.com/
