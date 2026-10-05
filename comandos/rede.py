@@ -9,6 +9,7 @@ import charts
 from api import KASPA_API, contagem_por_hora, get_json, opcional, ultimos_30_dias
 from envio import ERRO_API, falha_api, pode_responder, responder_com_grafico
 from formatacao import BRASILIA, br, mediana
+from textos import SAIBA_MAIS
 
 
 def dia_utc(hora: dict):
@@ -62,6 +63,7 @@ async def rede(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"{'✅' if no['isSynced'] else '⚠️'} Nó da API {'sincronizado' if no['isSynced'] else 'sincronizando'} "
         f"(versão {no['serverVersion']})"
         f"{linha_atualizacao(saude)}"
+        + SAIBA_MAIS
     )
     await responder_com_grafico(update, "rede", charts.grafico_rede, dias, ultimas_24h, legenda=message)
 
@@ -117,5 +119,6 @@ async def ativos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         + (f"🌍 {br(historia['count'] / 1e6, 1)} milhões de endereços já movimentaram KAS desde o início\n"
            if historia else "")
         + "\nℹ️ Endereço ativo = que enviou ou recebeu KAS naquela hora. Uma pessoa pode ter vários endereços."
+        + SAIBA_MAIS
     )
     await responder_com_grafico(update, "ativos", charts.grafico_ativos, dias, ultimas_24h, legenda=message)

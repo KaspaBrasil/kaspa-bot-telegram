@@ -9,6 +9,7 @@ from telegram.ext import ContextTypes
 from api import EXPLORER, KASPA_API, cotacao, get_json, nomes_conhecidos, opcional
 from envio import falha_api, pode_responder
 from formatacao import BRASILIA, br, br_minimo, ha_quanto, lista_enderecos, valor_em_reais
+from textos import SAIBA_MAIS
 
 RE_TRANSACAO = re.compile(r"\b[0-9a-f]{64}\b")
 CONFIRMACOES_SEGURAS = 100  # ~10 segundos a 10 blocos por segundo
@@ -69,7 +70,7 @@ def texto_transacao(dados: dict, blue_score: int, nomes: dict, cg) -> str:
     if destinos or not entradas:
         linhas += ["📥 Para:", lista_enderecos(destinos or [(e, v / 1e8) for e, v in saidas], nomes)]
     linhas += ["", f"🔎 [Ver no explorer]({EXPLORER}/txs/{dados['transaction_id']})"]
-    return "\n".join(linhas)
+    return "\n".join(linhas) + SAIBA_MAIS
 
 
 async def tx(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

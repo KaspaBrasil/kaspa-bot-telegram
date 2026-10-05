@@ -11,6 +11,7 @@ from api import COINGECKO_API, contagem_por_hora, get_json, hashrate_atual, hist
     preco_mexc, proximo_halving, supply_kas, ultimos_30_dias
 from envio import falha_api, pode_responder
 from formatacao import BRASILIA, br, br_minimo, formatar_hashrate, tempo_restante
+from textos import SAIBA_MAIS
 
 
 def _variacao(numero: float) -> str:
@@ -84,7 +85,7 @@ async def texto_resumo() -> str:
         circulante, maximo = supply
         linhas.append(f"📦 Minerado: {br(circulante / maximo * 100)}% do supply máximo")
     linhas += ["", "Detalhes: /preco · /ath · /hashrate · /rede · /alerta"]
-    return "\n".join(linhas)
+    return "\n".join(linhas) + SAIBA_MAIS
 
 
 async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -95,7 +96,7 @@ async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         await falha_api(update, "resumo", e)
         return
-    await update.effective_message.reply_text(texto, parse_mode="Markdown")
+    await update.effective_message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
 
 
 # ⏰ Resumo diário automático
@@ -119,6 +120,6 @@ async def enviar_resumo_diario(context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     for chat in chats_do_resumo():
         try:
-            await context.bot.send_message(chat, texto, parse_mode="Markdown")
+            await context.bot.send_message(chat, texto, parse_mode="Markdown", disable_web_page_preview=True)
         except Exception as e:
             print(f"Erro ao enviar o resumo diário para {chat}: {e}")

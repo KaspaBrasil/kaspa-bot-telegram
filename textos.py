@@ -11,6 +11,9 @@ Use /help para ver todos os comandos disponíveis.
 BOAS_VINDAS_SALDO = "🔒 Pronto! Agora mande aqui no privado: `/saldo kaspa:...`"
 BOAS_VINDAS_ALERTA = "🔔 Pronto! Agora mande aqui o preço do alerta, em US$: `/alerta 0,05`"
 
+# Rodapé das respostas dos comandos de dados (Markdown)
+SAIBA_MAIS = "\n\nSaiba mais em [Kaspa Brasil Analytics](https://kaspabrasil.github.io/kaspa-brasil-analytics/)!"
+
 # 📈 Comandos de dados ao vivo: comando -> descrição no /help e no menu do "/".
 # Os handlers ficam em bot.py; o bot não inicia se as duas listas não baterem.
 DADOS_AO_VIVO = {
@@ -354,6 +357,9 @@ DOACOES = """
 💰 **Doações para nossos projetos:**
 
 🤖 **Hospedagem do Bot aqui do grupo ($5/R$30 por mês):**
+`kaspa:qpsa3ctm4lk2usrl82fh8dyjvkyyq2uck9ly2pcgmv432yfs50ypjgn4v6c9f`
+
+📊 **Site Kaspa Brasil Analytics:**
 `kaspa:qpsa3ctm4lk2usrl82fh8dyjvkyyq2uck9ly2pcgmv432yfs50ypjgn4v6c9f`
 
 🌐 **Site Kaspa Br:**
