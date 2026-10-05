@@ -12,8 +12,7 @@ from api import COINGECKO_API, KASPA_API, MEXC_API, cotacao, get_json, opcional,
 from envio import enviar_so_texto, falha_api, grafico_em_cache, guardar_grafico, pode_pedir, pode_responder, \
     responder_com_grafico
 from formatacao import BRASILIA, br, br_minimo, ler_numero, mes_ano
-from textos import SAIBA_MAIS
-from textos import SAIBA_MAIS
+from textos import saiba_mais
 
 
 async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -46,7 +45,7 @@ async def preco(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         + (f"\n🏦 Market cap: R$ {br(cg['brl_market_cap'], 0)}" if cg else "")
         # Totalmente diluído: valor de mercado se todo o supply máximo já estivesse minerado
         + f"\n🧮 Totalmente diluído: US$ {br(maximo * price_usd, 0)}"
-        + SAIBA_MAIS
+        + saiba_mais("preco")
     )
     if not historico or not cg:
         await enviar_so_texto(update, "preco", "sem histórico de preço", message)
@@ -140,7 +139,7 @@ async def dados_kasbtc(chave: str):
         f"{'📈' if variacao >= 0 else '📉'} 24h: {'+' if variacao >= 0 else ''}{br(variacao)}%\n\n"
         f"{comparativo_kas_btc(titulo_comparativo, kas_inicio, kas_agora, btc_inicio, btc_agora)}\n\n"
         "ℹ️ 1 sat (satoshi) = 0,00000001 BTC · dados: MEXC"
-        + SAIBA_MAIS
+        + saiba_mais("kasbtc")
     )
     foto, legenda_cache = await grafico_em_cache(
         f"kasbtc:{chave}", charts.grafico_kasbtc, historico, periodo, variacao
@@ -368,7 +367,7 @@ async def ath(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         mensagem += f"\n🌱 Desde a mínima histórica ({mes_ano(d['data_atl'].astimezone(BRASILIA))}): " \
                     f"{_vezes(atual / d['atl'])}\n"
     mensagem += "\nℹ️ " + ("ATH: CoinGecko · ciclo e médias: MEXC" if md else
-                           "Dados: MEXC (CoinGecko indisponível agora)") + SAIBA_MAIS
+                           "Dados: MEXC (CoinGecko indisponível agora)") + saiba_mais("ath")
 
     if not semanas:
         await enviar_so_texto(update, "ath", "sem histórico semanal", mensagem)
@@ -444,5 +443,5 @@ async def converter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     linhas += [f"= {_valor('kas', kas)}"] if unidade != "kas" else []
     linhas += [f"= {_valor(u, kas * p)}" for u, p in precos.items() if u != unidade]
     linhas += ["", f"ℹ️ 1 KAS = US$ {br_minimo(precos['usd'], 4)} · cotação: {fonte}"]
-    await update.effective_message.reply_text("\n".join(linhas) + SAIBA_MAIS, parse_mode="Markdown",
+    await update.effective_message.reply_text("\n".join(linhas) + saiba_mais("converter"), parse_mode="Markdown",
                                               disable_web_page_preview=True)

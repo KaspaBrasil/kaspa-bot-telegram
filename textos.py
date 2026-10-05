@@ -11,8 +11,27 @@ Use /help para ver todos os comandos disponíveis.
 BOAS_VINDAS_SALDO = "🔒 Pronto! Agora mande aqui no privado: `/saldo kaspa:...`"
 BOAS_VINDAS_ALERTA = "🔔 Pronto! Agora mande aqui o preço do alerta, em US$: `/alerta 0,05`"
 
-# Rodapé das respostas dos comandos de dados (Markdown)
-SAIBA_MAIS = "\n\nSaiba mais em [Kaspa Brasil Analytics](https://kaspabrasil.github.io/kaspa-brasil-analytics/)!"
+# 📊 Rodapé das respostas dos comandos de dados (Markdown): link para a página do site sobre o assunto
+SITE_ANALYTICS = "https://kaspabrasil.github.io/kaspa-brasil-analytics/"
+PAGINA_ANALYTICS = {
+    # comando -> página do site (sem entrada: página inicial)
+    "ativos": "relatorio/",
+    "baleias": "relatorio/",
+    "calc": "g/hashrate/",
+    "halving": "relatorio/",
+    "hashrate": "g/hashrate/",
+    "kasbtc": "g/medias-50-200/",
+    "mineracao": "g/hashrate/",
+    "rede": "relatorio/",
+    "resumo": "relatorio/",
+    "saldo": "relatorio/",
+    "sou": "relatorio/",
+    "supply": "relatorio/",
+}
+
+
+def saiba_mais(comando: str) -> str:
+    return f"\n\nSaiba mais em [Kaspa Brasil Analytics]({SITE_ANALYTICS}{PAGINA_ANALYTICS.get(comando, '')})!"
 
 # 📈 Comandos de dados ao vivo: comando -> descrição no /help e no menu do "/".
 # Os handlers ficam em bot.py; o bot não inicia se as duas listas não baterem.

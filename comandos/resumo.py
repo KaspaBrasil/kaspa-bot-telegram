@@ -11,7 +11,7 @@ from api import COINGECKO_API, contagem_por_hora, get_json, hashrate_atual, hist
     preco_mexc, proximo_halving, supply_kas, ultimos_30_dias
 from envio import falha_api, pode_responder
 from formatacao import BRASILIA, br, br_minimo, formatar_hashrate, tempo_restante
-from textos import SAIBA_MAIS
+from textos import saiba_mais
 
 
 def _variacao(numero: float) -> str:
@@ -85,7 +85,7 @@ async def texto_resumo() -> str:
         circulante, maximo = supply
         linhas.append(f"📦 Minerado: {br(circulante / maximo * 100)}% do supply máximo")
     linhas += ["", "Detalhes: /preco · /ath · /hashrate · /rede · /alerta"]
-    return "\n".join(linhas) + SAIBA_MAIS
+    return "\n".join(linhas) + saiba_mais("resumo")
 
 
 async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

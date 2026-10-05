@@ -13,7 +13,7 @@ from envio import enviar_grafico, falha_api, pode_responder, responder_com_grafi
 from formatacao import BRASILIA, br, br_pct, formatar_hashrate, ler_numero, mes_ano, tempo_restante, \
     valor_em_reais
 from emissao import emissao_diaria, projecao_supply, recompensa_em, rendimento_por_th
-from textos import LINKS_MINERACAO, SAIBA_MAIS
+from textos import LINKS_MINERACAO, saiba_mais
 
 
 async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -33,7 +33,7 @@ async def hashrate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "⛏️ *Hashrate da Rede Kaspa*\n\n"
         f"⚡ Atual: {formatar_hashrate(atual)}\n"
         f"🏆 Recorde: {formatar_hashrate(maximo['hashrate'])} ({data_max:%d/%m/%Y})"
-        + SAIBA_MAIS
+        + saiba_mais("hashrate")
     )
     await responder_com_grafico(update, "hashrate", charts.grafico_hashrate, historico, atual,
                                 maximo["hashrate"], data_max, legenda=message)
@@ -60,7 +60,7 @@ async def halving(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"📦 Já minerado: {br(circulante / maximo * 100)}% do supply máximo\n\n"
         "ℹ️ A Kaspa usa o _halving cromático_: a recompensa cai todo mês "
         "(fator de (1/2)^(1/12)), reduzindo pela metade a cada ano."
-        + SAIBA_MAIS
+        + saiba_mais("halving")
     )
     await responder_com_grafico(update, "halving", charts.grafico_halving, recompensa, proximo, legenda=message)
 
@@ -79,7 +79,7 @@ async def mineracao(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = (
             f"{LINKS_MINERACAO}\n💡 Hoje, 1 TH/s rende ~{br(por_th)} KAS{valor_em_reais(por_th, cg)} por dia.\n"
             "Calcule o da sua máquina: /calc 21 (TH/s)"
-            + SAIBA_MAIS
+            + saiba_mais("mineracao")
         )
         await enviar_grafico(update, "mineracao", charts.grafico_mineracao, historico, atual, recompensa,
                              proximo, legenda=message)
@@ -116,7 +116,7 @@ async def supply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         + (f"🎯 99% minerado em ~{mes_ano(marco_99)}\n" if marco_99 else "")
         + f"\n🧮 Totalmente diluído: US$ {br(maximo * preco_usd, 0)}"
         + (f"\n🧮 Totalmente diluído: R$ {br(maximo * cg['brl'], 0)}" if cg else "")
-        + SAIBA_MAIS
+        + saiba_mais("supply")
     )
     await responder_com_grafico(update, "supply", charts.grafico_supply, circulante, maximo, recompensa, proximo,
                                 legenda=message)
@@ -203,5 +203,5 @@ async def calc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "",
         "ℹ️ Estimativa: não considera taxa da pool nem mudanças no hashrate da rede e no preço.",
     ]
-    await update.effective_message.reply_text("\n".join(linhas) + SAIBA_MAIS, parse_mode="Markdown",
+    await update.effective_message.reply_text("\n".join(linhas) + saiba_mais("calc"), parse_mode="Markdown",
                                               disable_web_page_preview=True)

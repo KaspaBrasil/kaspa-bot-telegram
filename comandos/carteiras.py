@@ -14,7 +14,7 @@ from api import EXPLORER, KASPA_API, cotacao, distribuicao, get_json, maiores_en
     opcional, supply_kas
 from envio import falha_api, pode_responder, responder_com_grafico
 from formatacao import BRASILIA, br, br_minimo, br_pct, ler_numero, nome_endereco, sem_markdown, valor_em_reais
-from textos import SAIBA_MAIS
+from textos import saiba_mais
 
 RE_ENDERECO = re.compile(r"kaspa:[a-z0-9]{61,63}")
 CORRETORAS = re.compile(
@@ -96,7 +96,7 @@ async def sou(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"📊 Isso é {br_pct(quantidade / circulante * 100)} do supply circulante\n\n"
         "ℹ️ Aproximação: corretoras guardam o saldo de muitos usuários em um único endereço, "
         "e uma pessoa pode ter vários endereços."
-        + SAIBA_MAIS
+        + saiba_mais("sou")
     )
     await update.effective_message.reply_text(message, parse_mode="Markdown", disable_web_page_preview=True)
 
@@ -128,7 +128,7 @@ async def baleias(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"Top 1000: {br(fatia(1000), 1)}% do supply\n"
         f"🏦 Corretoras identificadas: pelo menos {br(corretoras, 1)}%\n\n"
         "ℹ️ Nomes identificados pela api.kaspa.org. Endereço de corretora guarda o saldo de muitos usuários."
-        + SAIBA_MAIS
+        + saiba_mais("baleias")
     )
     await responder_com_grafico(update, "baleias", charts.grafico_baleias, top10, circulante, legenda=message)
 
@@ -232,7 +232,7 @@ async def texto_saldo(endereco: str) -> str:
         linhas.append(diagnostico_utxos(utxos["count"], corretora))
     linhas += linha_meta(faixas, kas, top)
     linhas += ["", f"🔎 [Ver no explorer]({EXPLORER}/addresses/{endereco})"]
-    return "\n".join(linhas) + SAIBA_MAIS
+    return "\n".join(linhas) + saiba_mais("saldo")
 
 
 ENDERECO_INVALIDO = (

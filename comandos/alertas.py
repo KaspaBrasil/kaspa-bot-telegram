@@ -88,7 +88,7 @@ async def alerta(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await mensagem.reply_text(f"{USO}\n\n*Seus alertas:*\n{_lista(alertas)}", parse_mode="Markdown")
         return
 
-    if args[0] in ("limpar", "apagar", "remover", "cancelar"):
+    if args[0] in ("limpar", "apagar", "remover", "cancelar", "desativar", "excluir"):
         if args[0] == "limpar" or (len(args) > 1 and args[1] == "todos"):
             with _banco() as banco:
                 banco.execute("DELETE FROM alertas WHERE usuario = ?", (usuario,))
