@@ -12,7 +12,7 @@ BOAS_VINDAS_SALDO = "🔒 Pronto! Agora mande aqui no privado: `/saldo kaspa:...
 BOAS_VINDAS_ALERTA = "🔔 Pronto! Agora mande aqui o preço do alerta, em US$: `/alerta 0,05`"
 
 # 📊 Rodapé das respostas dos comandos de dados (Markdown): link para a página do site sobre o assunto
-SITE_ANALYTICS = "https://kaspabrasil.github.io/kaspa-brasil-analytics/"
+SITE_ANALYTICS = "https://kaspa-analytics.pages.dev/"
 PAGINA_ANALYTICS = {
     # comando -> página do site (sem entrada: página inicial)
     "ativos": "relatorio/",
@@ -92,7 +92,7 @@ ANALISES = """
 📊 **Ferramentas de Análise:**
 
 🇧🇷 **Kaspa Brasil Analytics:**
-• https://kaspabrasil.github.io/kaspa-brasil-analytics/
+• https://kaspa-analytics.pages.dev/
 
 🔎 **Exploradores:**
 • https://explorer.kaspa.org/
@@ -104,7 +104,7 @@ ANALISES = """
 • https://explorer.kasplex.org/
 
 📈 **Estatísticas e Gráficos:**
-• https://kaspabrasil.github.io/kaspa-brasil-analytics/
+• https://kaspa-analytics.pages.dev/
 • https://www.kaspalytics.com/
 • https://analytics.kasmedia.com/
 • https://kaspa-lens.com/
